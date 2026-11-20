@@ -1,0 +1,8 @@
+{
+  "name": "Informatika & KKA // SMP-SMA Attaufiq Jambi",
+  "description": "Portal pembelajaran daring mapel Informatika dan Koding & Kecerdasan Artifisial (KKA) untuk SMP–SMA Attaufiq Jambi.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
