@@ -111,7 +111,8 @@ create index if not exists idx_tugas_mapel_kelas on public.tugas (mapel, kelas);
 create index if not exists idx_nilai_nisn_mapel on public.nilai (nisn, mapel);
 create index if not exists idx_karya_mapel_kat on public.karya (mapel, kategori);
 
--- Aktifkan Row Level Security (RLS) dan izinkan akses portal & dashboard guru
+-- Aktifkan Row Level Security (RLS):
+-- Siswa/publik hanya bisa MEMBACA (SELECT); hanya Guru yang login (authenticated) bisa mengubah database
 alter table public.materi enable row level security;
 alter table public.tugas enable row level security;
 alter table public.nilai enable row level security;
@@ -119,19 +120,34 @@ alter table public.karya enable row level security;
 alter table public.info enable row level security;
 
 drop policy if exists "portal_all_materi" on public.materi;
-create policy "portal_all_materi" on public.materi for all using (true) with check (true);
+drop policy if exists "portal_read_materi" on public.materi;
+drop policy if exists "guru_write_materi" on public.materi;
+create policy "portal_read_materi" on public.materi for select using (true);
+create policy "guru_write_materi" on public.materi for all to authenticated using (true) with check (true);
 
 drop policy if exists "portal_all_tugas" on public.tugas;
-create policy "portal_all_tugas" on public.tugas for all using (true) with check (true);
+drop policy if exists "portal_read_tugas" on public.tugas;
+drop policy if exists "guru_write_tugas" on public.tugas;
+create policy "portal_read_tugas" on public.tugas for select using (true);
+create policy "guru_write_tugas" on public.tugas for all to authenticated using (true) with check (true);
 
 drop policy if exists "portal_all_nilai" on public.nilai;
-create policy "portal_all_nilai" on public.nilai for all using (true) with check (true);
+drop policy if exists "portal_read_nilai" on public.nilai;
+drop policy if exists "guru_write_nilai" on public.nilai;
+create policy "portal_read_nilai" on public.nilai for select using (true);
+create policy "guru_write_nilai" on public.nilai for all to authenticated using (true) with check (true);
 
 drop policy if exists "portal_all_karya" on public.karya;
-create policy "portal_all_karya" on public.karya for all using (true) with check (true);
+drop policy if exists "portal_read_karya" on public.karya;
+drop policy if exists "guru_write_karya" on public.karya;
+create policy "portal_read_karya" on public.karya for select using (true);
+create policy "guru_write_karya" on public.karya for all to authenticated using (true) with check (true);
 
 drop policy if exists "portal_all_info" on public.info;
-create policy "portal_all_info" on public.info for all using (true) with check (true);
+drop policy if exists "portal_read_info" on public.info;
+drop policy if exists "guru_write_info" on public.info;
+create policy "portal_read_info" on public.info for select using (true);
+create policy "guru_write_info" on public.info for all to authenticated using (true) with check (true);
 
 -- Refresh schema cache PostgREST agar API langsung mengenali tabel baru
 notify pgrst, 'reload schema';

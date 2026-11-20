@@ -1,7 +1,7 @@
 import { type FormEvent, type ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
-import { DashboardView } from './components/DashboardView';
 import { CardMediaImage, MediaBox } from './components/MediaBox';
 import { SubjectSwitch } from './components/SubjectSwitch';
+import { TeacherPortal } from './components/TeacherPortal';
 import {
   DEFAULT_INFO,
   DEFAULT_KARYA,
@@ -39,10 +39,24 @@ function CardWrapper({ link, className, children }: CardWrapperProps) {
   return <div className={className}>{children}</div>;
 }
 
+function checkIsTeacherRoute(): boolean {
+  if (typeof window === 'undefined') return false;
+  const path = window.location.pathname.toLowerCase().replace(/\/+$/, '');
+  const hash = window.location.hash.toLowerCase();
+  const params = new URLSearchParams(window.location.search);
+  return (
+    path === '/guru' ||
+    path.endsWith('/guru') ||
+    hash === '#guru' ||
+    hash.startsWith('#/guru') ||
+    params.has('guru')
+  );
+}
+
 const KARYA_HEIGHT_CLASSES = ['media-h-160', 'media-h-190', 'media-h-220'] as const;
 
 export default function App() {
-  const [viewMode, setViewMode] = useState<'portal' | 'dashboard'>('portal');
+  const [isTeacherRoute, setIsTeacherRoute] = useState<boolean>(() => checkIsTeacherRoute());
 
   const [materiAll, setMateriAll] = useState<MateriItem[]>(DEFAULT_MATERI);
   const [tugasAll, setTugasAll] = useState<TugasItem[]>(DEFAULT_TUGAS);
@@ -64,6 +78,16 @@ export default function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [heroImgFailed, setHeroImgFailed] = useState(false);
 
+  useEffect(() => {
+    const syncRoute = () => setIsTeacherRoute(checkIsTeacherRoute());
+    window.addEventListener('hashchange', syncRoute);
+    window.addEventListener('popstate', syncRoute);
+    return () => {
+      window.removeEventListener('hashchange', syncRoute);
+      window.removeEventListener('popstate', syncRoute);
+    };
+  }, []);
+
   const refreshData = useCallback(async () => {
     const res = await loadPortalData();
     setMateriAll(res.materi);
@@ -74,12 +98,14 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    refreshData();
-  }, [refreshData]);
+    if (!isTeacherRoute) {
+      refreshData();
+    }
+  }, [isTeacherRoute, refreshData]);
 
-  // Reveal on scroll (re-run whenever returning to portal view)
+  // Reveal on scroll
   useEffect(() => {
-    if (viewMode !== 'portal') return;
+    if (isTeacherRoute) return;
     const els = document.querySelectorAll('.reveal');
     const io = new IntersectionObserver(
       (entries) => {
@@ -87,11 +113,11 @@ export default function App() {
           if (e.isIntersecting) e.target.classList.add('in');
         });
       },
-      { threshold: 0.12 }
+      { threshold: 0.1 }
     );
     els.forEach((el) => io.observe(el));
     return () => io.disconnect();
-  }, [viewMode]);
+  }, [isTeacherRoute]);
 
   // Mobile sidebar Escape, resize, and body no-scroll sync
   useEffect(() => {
@@ -175,27 +201,15 @@ export default function App() {
     });
   }
 
-  function openDashboard() {
-    setSidebarOpen(false);
-    setViewMode('dashboard');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }
-
-  if (viewMode === 'dashboard') {
-    return (
-      <DashboardView
-        onBackToPortal={() => {
-          setViewMode('portal');
-          refreshData();
-        }}
-        onDataChanged={refreshData}
-      />
-    );
+  // Dedicated route for Teacher-only Database Portal (/guru, #/guru, ?guru)
+  if (isTeacherRoute) {
+    return <TeacherPortal />;
   }
 
   return (
     <>
       <nav id="navbar">
+        <div className="nav-rainbow-bar" />
         <div className="nav-inner">
           <div className="brand">
             <img
@@ -216,9 +230,6 @@ export default function App() {
             <a href="#karya">Karya Siswa</a>
           </div>
           <div className="nav-right">
-            <button type="button" className="nav-dash-btn" onClick={openDashboard}>
-              Dashboard Guru
-            </button>
             <a href="#materi" className="nav-cta">
               Mulai Belajar
             </a>
@@ -278,9 +289,6 @@ export default function App() {
             🎨 Karya Siswa
           </a>
         </nav>
-        <button type="button" className="mobile-sidebar-dash" onClick={openDashboard}>
-          🛠️ Dashboard Guru
-        </button>
         <a
           href="#materi"
           className="btn-primary mobile-sidebar-cta"
@@ -296,24 +304,57 @@ export default function App() {
           {!heroImgFailed ? (
             <img
               src="/hero-bg.png"
-              alt="Kota diselimuti kabut asap"
+              alt="Latar kampus Attaufiq Jambi"
               onError={() => setHeroImgFailed(true)}
             />
           ) : null}
         </div>
-        <div className="smoke s1" />
-        <div className="smoke s2" />
-        <div className="smoke s3" />
-        <div className="smoke s4" />
+        <div className="hero-grid-pattern" />
+        <div className="aurora a1" />
+        <div className="aurora a2" />
+        <div className="aurora a3" />
+        <div className="aurora a4" />
         <div className="hero-haze" />
-        <div className="hero-top">
+
+        <div className="hero-center">
+          <div className="hero-school-tag">Lab ICT 1 · SMP–SMA Attaufiq Jambi</div>
           <div className="hero-title-badge">
             <h1 className="hero-title">
-              Website Pembelajaran Informatika<span className="hero-slash">/</span>KKA
+              Website Pembelajaran{' '}
+              <span className="hero-gradient-text">
+                Informatika<span className="hero-slash">/</span>KKA
+              </span>
             </h1>
           </div>
-        </div>
-        <div className="hero-bottom">
+          <p className="hero-lead">
+            Pusat materi terstruktur, tugas &amp; kuis kelas 7–12, rekap nilai langsung, hingga
+            galeri karya digital dan kecerdasan artifisial siswa.
+          </p>
+
+          <div className="hero-highlights">
+            <div className="hero-hl-card hl-sky">
+              <span className="hero-hl-icon">💻</span>
+              <div>
+                <strong>Informatika</strong>
+                <small>Kelas 7 – 12</small>
+              </div>
+            </div>
+            <div className="hero-hl-card hl-violet">
+              <span className="hero-hl-icon">🤖</span>
+              <div>
+                <strong>Koding &amp; AI</strong>
+                <small>Kurikulum Merdeka</small>
+              </div>
+            </div>
+            <div className="hero-hl-card hl-amber">
+              <span className="hero-hl-icon">🚀</span>
+              <div>
+                <strong>Karya &amp; Nilai</strong>
+                <small>Terintegrasi Real-Time</small>
+              </div>
+            </div>
+          </div>
+
           <div className="hero-cta-row">
             <a href="#materi" className="btn-primary">
               Buka Materi Kelas →
@@ -323,6 +364,7 @@ export default function App() {
             </a>
           </div>
         </div>
+
         <div className="scroll-cue">
           <span>SCROLL</span>
           <div className="line" />
@@ -331,7 +373,7 @@ export default function App() {
 
       <section id="info">
         <div className="container reveal">
-          <div className="eyebrow">Ruang Info</div>
+          <div className="eyebrow eyebrow-rose">Ruang Info</div>
           <h2 className="section-title">Kabar &amp; pembaruan kelas</h2>
           <p className="section-sub">
             Update singkat seputar kegiatan mapel Informatika — dari media sosial, video
@@ -375,7 +417,7 @@ export default function App() {
 
       <section id="materi">
         <div className="container reveal">
-          <div className="eyebrow">Ruang Belajar</div>
+          <div className="eyebrow eyebrow-sky">Ruang Belajar</div>
           <h2 className="section-title">Materi pembelajaran per jenjang</h2>
           <p className="section-sub">
             Pilih mapel dan kelas untuk melihat topik yang sedang dan akan dipelajari, mengikuti
@@ -409,7 +451,7 @@ export default function App() {
                   <CardWrapper
                     key={`${m.Judul || 'materi'}-${i}`}
                     link={m.Link}
-                    className="materi-card"
+                    className={`materi-card card-accent-${(i % 4) + 1}`}
                   >
                     <CardMediaImage src={m.Image} />
                     <div className="materi-num">
@@ -429,7 +471,7 @@ export default function App() {
 
       <section id="tugas">
         <div className="container reveal">
-          <div className="eyebrow">Ruang Kerja</div>
+          <div className="eyebrow eyebrow-emerald">Ruang Kerja</div>
           <h2 className="section-title">Tugas &amp; kuis per kelas</h2>
           <p className="section-sub">
             Pilih mapel dan kelas untuk melihat tugas &amp; kuis yang berlaku, lengkap dengan
@@ -466,7 +508,7 @@ export default function App() {
                     <CardWrapper
                       key={`${t.Judul || 'tugas'}-${i}`}
                       link={t.Link}
-                      className={`materi-card${sKey === 'done' ? ' tugas-done' : ''}`}
+                      className={`materi-card card-accent-${((i + 1) % 4) + 1}${sKey === 'done' ? ' tugas-done' : ''}`}
                     >
                       <CardMediaImage src={t.Image} />
                       <div className="tugas-top-row">
@@ -496,7 +538,7 @@ export default function App() {
 
       <section id="nilai">
         <div className="container reveal">
-          <div className="eyebrow">Ruang Hasil</div>
+          <div className="eyebrow eyebrow-violet">Ruang Hasil</div>
           <h2 className="section-title">Cek nilai</h2>
           <p className="section-sub">
             Masukkan NISN untuk melihat rekap nilai siswa secara langsung dari database portal.
@@ -591,7 +633,7 @@ export default function App() {
 
       <section id="karya">
         <div className="container reveal">
-          <div className="eyebrow">Ruang Karya</div>
+          <div className="eyebrow eyebrow-amber">Ruang Karya</div>
           <h2 className="section-title">Karya siswa</h2>
           <p className="section-sub">
             Dokumentasi proyek, website, poster, video, hingga proyek koding &amp; AI hasil karya
@@ -672,7 +714,7 @@ export default function App() {
             href="https://wa.me/6285290699692"
             target="_blank"
             rel="noopener noreferrer"
-            className="btn-primary"
+            className="btn-cta-white"
           >
             Hubungi Teacher ICT →
           </a>
@@ -734,11 +776,6 @@ export default function App() {
                   >
                     Kontak &amp; Alamat
                   </a>
-                </li>
-                <li>
-                  <button type="button" className="dash-link-btn" onClick={openDashboard}>
-                    Dashboard Guru (Supabase)
-                  </button>
                 </li>
               </ul>
             </div>

@@ -1,10 +1,11 @@
 import { type FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  ArrowLeft,
   CheckCircle2,
   Copy,
   Database,
+  ExternalLink,
   FileSpreadsheet,
+  LogOut,
   Pencil,
   Plus,
   RefreshCw,
@@ -38,8 +39,9 @@ import {
 import { SUPABASE_URL } from '../lib/supabase';
 
 interface DashboardViewProps {
-  onBackToPortal: () => void;
-  onDataChanged: () => void;
+  teacherEmail?: string;
+  onSignOut: () => void;
+  onDataChanged?: () => void;
 }
 
 type DashboardMainTab = 'crud' | 'migration';
@@ -136,7 +138,11 @@ function createEmptyForm(table: TableName): Record<string, string> {
   };
 }
 
-export function DashboardView({ onBackToPortal, onDataChanged }: DashboardViewProps) {
+export function DashboardView({
+  teacherEmail,
+  onSignOut,
+  onDataChanged,
+}: DashboardViewProps) {
   const [mainTab, setMainTab] = useState<DashboardMainTab>('crud');
   const [activeTable, setActiveTable] = useState<TableName>('materi');
 
@@ -262,7 +268,7 @@ export function DashboardView({ onBackToPortal, onDataChanged }: DashboardViewPr
     setEditingId(null);
     setFormState(createEmptyForm(activeTable));
     await Promise.all([loadActiveTableRows(activeTable), refreshTableStatuses()]);
-    onDataChanged();
+    onDataChanged?.();
   }
 
   function startEdit(row: Record<string, unknown>) {
@@ -290,7 +296,7 @@ export function DashboardView({ onBackToPortal, onDataChanged }: DashboardViewPr
       setFormState(createEmptyForm(activeTable));
     }
     await Promise.all([loadActiveTableRows(activeTable), refreshTableStatuses()]);
-    onDataChanged();
+    onDataChanged?.();
   }
 
   const filteredRows = useMemo(() => {
@@ -337,7 +343,7 @@ export function DashboardView({ onBackToPortal, onDataChanged }: DashboardViewPr
     setMigrating(false);
     await refreshTableStatuses();
     await loadActiveTableRows(activeTable);
-    onDataChanged();
+    onDataChanged?.();
   }
 
   const selectedAnalysis = analyses.find((a) => a.table === selectedAnalysisTab);
@@ -350,32 +356,52 @@ export function DashboardView({ onBackToPortal, onDataChanged }: DashboardViewPr
       <header className="dash-topbar">
         <div className="container dash-topbar-inner">
           <div className="dash-brand">
-            <button type="button" className="dash-back-btn" onClick={onBackToPortal}>
-              <ArrowLeft size={16} />
-              <span>Kembali ke Portal</span>
-            </button>
+            <img
+              className="logo-mark"
+              src="/assets/logo-attaufiq.png"
+              alt="Logo Sekolah Islam Attaufiq"
+            />
             <div>
               <h1>Dashboard Guru &amp; Migrasi Supabase</h1>
-              <p className="dash-sub-url">Target: {SUPABASE_URL}</p>
+              <p className="dash-sub-url">
+                {teacherEmail ? `Masuk sebagai ${teacherEmail} · ` : ''}
+                {SUPABASE_URL}
+              </p>
             </div>
           </div>
 
-          <div className="dash-main-tabs">
-            <button
-              type="button"
-              className={`dash-main-tab${mainTab === 'crud' ? ' active' : ''}`}
-              onClick={() => setMainTab('crud')}
+          <div className="dash-topbar-actions">
+            <div className="dash-main-tabs">
+              <button
+                type="button"
+                className={`dash-main-tab${mainTab === 'crud' ? ' active' : ''}`}
+                onClick={() => setMainTab('crud')}
+              >
+                <Database size={16} />
+                <span>Input &amp; Kelola Data</span>
+              </button>
+              <button
+                type="button"
+                className={`dash-main-tab${mainTab === 'migration' ? ' active' : ''}`}
+                onClick={() => setMainTab('migration')}
+              >
+                <UploadCloud size={16} />
+                <span>Analisis &amp; Migrasi</span>
+              </button>
+            </div>
+            <a
+              href="/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="dash-back-btn"
+              title="Pratinjau website siswa di tab baru"
             >
-              <Database size={16} />
-              <span>Input &amp; Kelola Data</span>
-            </button>
-            <button
-              type="button"
-              className={`dash-main-tab${mainTab === 'migration' ? ' active' : ''}`}
-              onClick={() => setMainTab('migration')}
-            >
-              <UploadCloud size={16} />
-              <span>Analisis &amp; Migrasi Spreadsheet</span>
+              <ExternalLink size={15} />
+              <span>Website</span>
+            </a>
+            <button type="button" className="dash-logout-btn" onClick={onSignOut}>
+              <LogOut size={15} />
+              <span>Keluar</span>
             </button>
           </div>
         </div>
