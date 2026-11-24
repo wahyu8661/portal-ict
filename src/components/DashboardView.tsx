@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import {
   type InfoItem,
+  type ItSkillItem,
   type KaryaItem,
   KELAS_LIST,
   type Mapel,
@@ -31,6 +32,7 @@ import {
   fetchSupabaseRowsDirect,
   migrateTableToSupabase,
   type SheetTableAnalysis,
+  type SheetTableName,
   SUPABASE_SCHEMA_SQL,
   type TableName,
   type TableStatus,
@@ -48,13 +50,15 @@ type DashboardMainTab = 'crud' | 'migration';
 
 const TABLE_LABELS: Record<TableName, string> = {
   materi: 'Materi',
+  it_skills: 'IT Skills',
   tugas: 'Tugas & Kuis',
   nilai: 'Nilai Siswa',
   karya: 'Karya Siswa',
   info: 'Info & Update',
 };
 
-const ALL_TABLES: TableName[] = ['materi', 'tugas', 'nilai', 'karya', 'info'];
+const ALL_TABLES: TableName[] = ['materi', 'it_skills', 'tugas', 'nilai', 'karya', 'info'];
+const SHEET_TABLES: SheetTableName[] = ['materi', 'tugas', 'nilai', 'karya', 'info'];
 
 const KARYA_CATEGORIES = [
   'Website',
@@ -86,6 +90,16 @@ function createEmptyForm(table: TableName): Record<string, string> {
     return {
       Mapel: 'Informatika',
       Kelas: 'Kelas 10',
+      Urutan: '1',
+      Judul: '',
+      Deskripsi: '',
+      Tag: '',
+      Link: '',
+      Image: '',
+    };
+  }
+  if (table === 'it_skills') {
+    return {
       Urutan: '1',
       Judul: '',
       Deskripsi: '',
@@ -169,9 +183,9 @@ export function DashboardView({
   // Migration & Analysis State
   const [analyses, setAnalyses] = useState<SheetTableAnalysis[]>([]);
   const [analyzing, setAnalyzing] = useState(false);
-  const [selectedAnalysisTab, setSelectedAnalysisTab] = useState<TableName>('materi');
+  const [selectedAnalysisTab, setSelectedAnalysisTab] = useState<SheetTableName>('materi');
   const [sqlCopied, setSqlCopied] = useState(false);
-  const [selectedMigrateTables, setSelectedMigrateTables] = useState<Record<TableName, boolean>>({
+  const [selectedMigrateTables, setSelectedMigrateTables] = useState<Record<SheetTableName, boolean>>({
     materi: true,
     tugas: true,
     nilai: true,
@@ -182,7 +196,7 @@ export function DashboardView({
   const [replaceOnMigrate, setReplaceOnMigrate] = useState(true);
   const [migrating, setMigrating] = useState(false);
   const [migrationResults, setMigrationResults] = useState<
-    { table: TableName; inserted: number; error?: string }[]
+    { table: SheetTableName; inserted: number; error?: string }[]
   >([]);
 
   const refreshTableStatuses = useCallback(async () => {
@@ -241,6 +255,7 @@ export function DashboardView({
 
     const payload = formState as unknown as
       | MateriItem
+      | ItSkillItem
       | TugasItem
       | NilaiItem
       | KaryaItem
@@ -326,9 +341,9 @@ export function DashboardView({
   async function handleRunMigration() {
     setMigrating(true);
     setMigrationResults([]);
-    const results: { table: TableName; inserted: number; error?: string }[] = [];
+    const results: { table: SheetTableName; inserted: number; error?: string }[] = [];
 
-    for (const table of ALL_TABLES) {
+    for (const table of SHEET_TABLES) {
       if (!selectedMigrateTables[table]) continue;
       const analysis = analyses.find((a) => a.table === table);
       const sheetRows = analysis?.rows || [];
@@ -348,8 +363,9 @@ export function DashboardView({
 
   const selectedAnalysis = analyses.find((a) => a.table === selectedAnalysisTab);
   const totalSheetRows = analyses.reduce((acc, a) => acc + a.rowCount, 0);
-  const allTablesExist =
-    tableStatuses.length === ALL_TABLES.length && tableStatuses.every((s) => s.exists);
+  const allSheetTablesExist = SHEET_TABLES.every((t) =>
+    tableStatuses.find((s) => s.table === t && s.exists)
+  );
 
   return (
     <div className="dash-shell">
@@ -485,35 +501,37 @@ export function DashboardView({
                   </div>
                 ) : null}
 
-                {activeTable === 'materi' && (
+                {(activeTable === 'materi' || activeTable === 'it_skills') && (
                   <>
-                    <div className="dash-row-2">
-                      <div>
-                        <label htmlFor="f-mapel">Mapel</label>
-                        <select
-                          id="f-mapel"
-                          value={formState.Mapel}
-                          onChange={(e) => updateField('Mapel', e.target.value as Mapel)}
-                        >
-                          <option value="Informatika">Informatika</option>
-                          <option value="KKA">KKA</option>
-                        </select>
+                    {activeTable === 'materi' && (
+                      <div className="dash-row-2">
+                        <div>
+                          <label htmlFor="f-mapel">Mapel</label>
+                          <select
+                            id="f-mapel"
+                            value={formState.Mapel}
+                            onChange={(e) => updateField('Mapel', e.target.value as Mapel)}
+                          >
+                            <option value="Informatika">Informatika</option>
+                            <option value="KKA">KKA</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label htmlFor="f-kelas">Kelas</label>
+                          <select
+                            id="f-kelas"
+                            value={formState.Kelas}
+                            onChange={(e) => updateField('Kelas', e.target.value)}
+                          >
+                            {KELAS_LIST.map((k) => (
+                              <option key={k} value={k}>
+                                {k}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
                       </div>
-                      <div>
-                        <label htmlFor="f-kelas">Kelas</label>
-                        <select
-                          id="f-kelas"
-                          value={formState.Kelas}
-                          onChange={(e) => updateField('Kelas', e.target.value)}
-                        >
-                          {KELAS_LIST.map((k) => (
-                            <option key={k} value={k}>
-                              {k}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    </div>
+                    )}
                     <div className="dash-row-2">
                       <div>
                         <label htmlFor="f-urutan">Urutan</label>
@@ -527,22 +545,34 @@ export function DashboardView({
                         />
                       </div>
                       <div>
-                        <label htmlFor="f-tag">Tag / Topik</label>
+                        <label htmlFor="f-tag">
+                          {activeTable === 'it_skills' ? 'Tag / Kategori Skill' : 'Tag / Topik'}
+                        </label>
                         <input
                           id="f-tag"
                           type="text"
-                          placeholder="contoh: Berpikir Komputasional"
+                          placeholder={
+                            activeTable === 'it_skills'
+                              ? 'contoh: Google Workspace / Desain Grafis'
+                              : 'contoh: Berpikir Komputasional'
+                          }
                           value={formState.Tag}
                           onChange={(e) => updateField('Tag', e.target.value)}
                         />
                       </div>
                     </div>
-                    <label htmlFor="f-judul">Judul Materi</label>
+                    <label htmlFor="f-judul">
+                      {activeTable === 'it_skills' ? 'Judul IT Skills' : 'Judul Materi'}
+                    </label>
                     <input
                       id="f-judul"
                       type="text"
                       required
-                      placeholder="contoh: Pengenalan Mikrokontroler"
+                      placeholder={
+                        activeTable === 'it_skills'
+                          ? 'contoh: Penguasaan Google Workspace & Docs'
+                          : 'contoh: Pengenalan Mikrokontroler'
+                      }
                       value={formState.Judul}
                       onChange={(e) => updateField('Judul', e.target.value)}
                     />
@@ -550,11 +580,19 @@ export function DashboardView({
                     <textarea
                       id="f-desk"
                       rows={3}
-                      placeholder="Ringkasan materi pembelajaran..."
+                      placeholder={
+                        activeTable === 'it_skills'
+                          ? 'Ringkasan keterampilan IT yang dipelajari...'
+                          : 'Ringkasan materi pembelajaran...'
+                      }
                       value={formState.Deskripsi}
                       onChange={(e) => updateField('Deskripsi', e.target.value)}
                     />
-                    <label htmlFor="f-link">Tautan Materi (URL)</label>
+                    <label htmlFor="f-link">
+                      {activeTable === 'it_skills'
+                        ? 'Tautan Modul IT Skills (URL)'
+                        : 'Tautan Materi (URL)'}
+                    </label>
                     <input
                       id="f-link"
                       type="url"
@@ -922,7 +960,7 @@ export function DashboardView({
                       onChange={(e) => setSearchTerm(e.target.value)}
                     />
                   </div>
-                  {activeTable !== 'info' && (
+                  {activeTable !== 'info' && activeTable !== 'it_skills' && (
                     <>
                       <select
                         aria-label="Filter Mapel"
@@ -987,6 +1025,14 @@ export function DashboardView({
                               <th>Aksi</th>
                             </>
                           )}
+                          {activeTable === 'it_skills' && (
+                            <>
+                              <th>Urutan</th>
+                              <th>Judul &amp; Deskripsi</th>
+                              <th>Tag</th>
+                              <th>Aksi</th>
+                            </>
+                          )}
                           {activeTable === 'tugas' && (
                             <>
                               <th>Mapel / Kelas</th>
@@ -1034,6 +1080,20 @@ export function DashboardView({
                                   </td>
                                   <td>
                                     <span className="dash-mono-tag">#{String(row.Urutan || 1)}</span>{' '}
+                                    <strong>{String(row.Judul || '')}</strong>
+                                    {row.Deskripsi ? (
+                                      <div className="dash-cell-sub">{String(row.Deskripsi)}</div>
+                                    ) : null}
+                                  </td>
+                                  <td>{String(row.Tag || '—')}</td>
+                                </>
+                              )}
+                              {activeTable === 'it_skills' && (
+                                <>
+                                  <td>
+                                    <span className="dash-mono-tag">#{String(row.Urutan || 1)}</span>
+                                  </td>
+                                  <td>
                                     <strong>{String(row.Judul || '')}</strong>
                                     {row.Deskripsi ? (
                                       <div className="dash-cell-sub">{String(row.Deskripsi)}</div>
@@ -1272,7 +1332,7 @@ export function DashboardView({
               <div className="dash-step-head">
                 <div>
                   <span className="eyebrow">Langkah 2 · Skema Database Supabase</span>
-                  <h2>Siapkan 5 Tabel &amp; Cek Koneksi Supabase</h2>
+                  <h2>Siapkan 6 Tabel &amp; Cek Koneksi Supabase</h2>
                   <p className="dash-step-desc">
                     Key yang dilampirkan adalah <em>publishable key</em> sehingga pembuatan tabel
                     (DDL) perlu dijalankan sekali di <strong>Supabase Dashboard → SQL Editor</strong>.
@@ -1329,7 +1389,7 @@ export function DashboardView({
                 <div className="dash-check-group">
                   <span className="dash-group-label">Pilih Tab untuk Dimigrasi:</span>
                   <div className="dash-check-row">
-                    {ALL_TABLES.map((tbl) => (
+                    {SHEET_TABLES.map((tbl) => (
                       <label key={tbl} className="dash-checkbox">
                         <input
                           type="checkbox"
@@ -1374,7 +1434,7 @@ export function DashboardView({
                 <button
                   type="button"
                   className="btn-primary"
-                  disabled={migrating || !allTablesExist}
+                  disabled={migrating || !allSheetTablesExist}
                   onClick={handleRunMigration}
                 >
                   <UploadCloud size={17} />
@@ -1384,7 +1444,7 @@ export function DashboardView({
                       : 'Jalankan Migrasi ke Supabase Sekarang'}
                   </span>
                 </button>
-                {!allTablesExist ? (
+                {!allSheetTablesExist ? (
                   <span className="dash-helper-warn">
                     Jalankan skrip SQL pada Langkah 2 di Supabase SQL Editor lalu klik &quot;Cek Status
                     Tabel&quot; terlebih dahulu.

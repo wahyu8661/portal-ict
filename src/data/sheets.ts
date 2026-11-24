@@ -13,6 +13,16 @@ export interface MateriItem {
   Link?: string;
 }
 
+export interface ItSkillItem {
+  id?: number;
+  Urutan?: string;
+  Judul?: string;
+  Deskripsi?: string;
+  Tag?: string;
+  Image?: string;
+  Link?: string;
+}
+
 export interface TugasItem {
   id?: number;
   Mapel?: string;
@@ -71,6 +81,7 @@ export const SHEET_URLS = {
 };
 
 export const DEFAULT_MATERI: MateriItem[] = [];
+export const DEFAULT_IT_SKILLS: ItSkillItem[] = [];
 export const DEFAULT_TUGAS: TugasItem[] = [];
 export const DEFAULT_NILAI: NilaiItem[] = [];
 export const DEFAULT_KARYA: KaryaItem[] = [];

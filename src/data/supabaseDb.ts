@@ -2,6 +2,7 @@ import { supabase } from '../lib/supabase';
 import {
   fetchSheet,
   type InfoItem,
+  type ItSkillItem,
   type KaryaItem,
   type MateriItem,
   type NilaiItem,
@@ -10,7 +11,8 @@ import {
   type TugasItem,
 } from './sheets';
 
-export type TableName = 'materi' | 'tugas' | 'nilai' | 'karya' | 'info';
+export type SheetTableName = 'materi' | 'tugas' | 'nilai' | 'karya' | 'info';
+export type TableName = SheetTableName | 'it_skills';
 export type DataSourceMode = 'supabase' | 'sheets' | 'empty';
 
 export interface TableStatus {
@@ -21,7 +23,7 @@ export interface TableStatus {
 }
 
 export interface SheetTableAnalysis {
-  table: TableName;
+  table: SheetTableName;
   rowCount: number;
   headers: string[];
   emptyCounts: Record<string, number>;
@@ -32,6 +34,7 @@ export interface SheetTableAnalysis {
 
 export interface PortalLoadResult {
   materi: MateriItem[];
+  itSkills: ItSkillItem[];
   tugas: TugasItem[];
   nilai: NilaiItem[];
   karya: KaryaItem[];
@@ -56,6 +59,22 @@ create table if not exists public.materi (
   image text default '',
   created_at timestamptz not null default now()
 );
+
+create table if not exists public.it_skills (
+  id bigserial primary key,
+  urutan integer not null default 1,
+  judul text not null,
+  deskripsi text default '',
+  tag text default '',
+  link text default '',
+  image text default '',
+  created_at timestamptz not null default now()
+);
+
+-- Pastikan kolom mapel & kelas dihapus jika tabel it_skills sebelumnya sudah terlanjur dibuat
+alter table public.it_skills
+  drop column if exists mapel,
+  drop column if exists kelas;
 
 create table if not exists public.tugas (
   id bigserial primary key,
@@ -107,6 +126,8 @@ create table if not exists public.info (
 
 -- Indeks untuk mempercepat filter per mapel, kelas, dan pencarian NISN
 create index if not exists idx_materi_mapel_kelas on public.materi (mapel, kelas, urutan);
+drop index if exists public.idx_it_skills_mapel_kelas;
+create index if not exists idx_it_skills_urutan on public.it_skills (urutan, id);
 create index if not exists idx_tugas_mapel_kelas on public.tugas (mapel, kelas);
 create index if not exists idx_nilai_nisn_mapel on public.nilai (nisn, mapel);
 create index if not exists idx_karya_mapel_kat on public.karya (mapel, kategori);
@@ -114,6 +135,7 @@ create index if not exists idx_karya_mapel_kat on public.karya (mapel, kategori)
 -- Aktifkan Row Level Security (RLS):
 -- Siswa/publik hanya bisa MEMBACA (SELECT); hanya Guru yang login (authenticated) bisa mengubah database
 alter table public.materi enable row level security;
+alter table public.it_skills enable row level security;
 alter table public.tugas enable row level security;
 alter table public.nilai enable row level security;
 alter table public.karya enable row level security;
@@ -124,6 +146,11 @@ drop policy if exists "portal_read_materi" on public.materi;
 drop policy if exists "guru_write_materi" on public.materi;
 create policy "portal_read_materi" on public.materi for select using (true);
 create policy "guru_write_materi" on public.materi for all to authenticated using (true) with check (true);
+
+drop policy if exists "portal_read_it_skills" on public.it_skills;
+drop policy if exists "guru_write_it_skills" on public.it_skills;
+create policy "portal_read_it_skills" on public.it_skills for select using (true);
+create policy "guru_write_it_skills" on public.it_skills for all to authenticated using (true) with check (true);
 
 drop policy if exists "portal_all_tugas" on public.tugas;
 drop policy if exists "portal_read_tugas" on public.tugas;
@@ -173,6 +200,29 @@ function mapMateriToDb(item: MateriItem, normalize = true) {
   return {
     mapel: (item.Mapel || 'Informatika').trim(),
     kelas: normalize ? normalizeKelas(item.Kelas || 'Kelas 10') : (item.Kelas || '').trim(),
+    urutan: parseInt(String(item.Urutan || '1'), 10) || 1,
+    judul: (item.Judul || '').trim(),
+    deskripsi: (item.Deskripsi || '').trim(),
+    tag: (item.Tag || '').trim(),
+    link: (item.Link || '').trim(),
+    image: (item.Image || '').trim(),
+  };
+}
+
+function mapDbToItSkill(r: Record<string, unknown>): ItSkillItem {
+  return {
+    id: Number(r.id),
+    Urutan: String(r.urutan ?? 1),
+    Judul: String(r.judul ?? ''),
+    Deskripsi: String(r.deskripsi ?? ''),
+    Tag: String(r.tag ?? ''),
+    Link: String(r.link ?? ''),
+    Image: String(r.image ?? ''),
+  };
+}
+
+function mapItSkillToDb(item: ItSkillItem) {
+  return {
     urutan: parseInt(String(item.Urutan || '1'), 10) || 1,
     judul: (item.Judul || '').trim(),
     deskripsi: (item.Deskripsi || '').trim(),
@@ -299,7 +349,7 @@ async function fetchSupabaseTable<T>(
   mapper: (r: Record<string, unknown>) => T
 ): Promise<{ exists: boolean; rows: T[]; error?: string }> {
   const query =
-    table === 'materi'
+    table === 'materi' || table === 'it_skills'
       ? supabase.from(table).select('*').order('urutan', { ascending: true }).order('id', { ascending: true })
       : supabase.from(table).select('*').order('id', { ascending: true });
 
@@ -314,8 +364,9 @@ async function fetchSupabaseTable<T>(
 }
 
 export async function loadPortalData(): Promise<PortalLoadResult> {
-  const [sbMateri, sbTugas, sbNilai, sbKarya, sbInfo] = await Promise.all([
+  const [sbMateri, sbItSkills, sbTugas, sbNilai, sbKarya, sbInfo] = await Promise.all([
     fetchSupabaseTable('materi', mapDbToMateri),
+    fetchSupabaseTable('it_skills', mapDbToItSkill),
     fetchSupabaseTable('tugas', mapDbToTugas),
     fetchSupabaseTable('nilai', mapDbToNilai),
     fetchSupabaseTable('karya', mapDbToKarya),
@@ -361,6 +412,9 @@ export async function loadPortalData(): Promise<PortalLoadResult> {
   };
 
   const rMateri = pick(sbMateri, shMateri);
+  const rItSkills = sbItSkills.exists
+    ? { items: sbItSkills.rows, mode: 'supabase' as DataSourceMode }
+    : { items: [] as ItSkillItem[], mode: 'empty' as DataSourceMode };
   const rTugas = pick(sbTugas, shTugas);
   const rNilai = pick(sbNilai, shNilai);
   const rKarya = pick(sbKarya, shKarya);
@@ -368,12 +422,14 @@ export async function loadPortalData(): Promise<PortalLoadResult> {
 
   return {
     materi: rMateri.items,
+    itSkills: rItSkills.items,
     tugas: rTugas.items,
     nilai: rNilai.items,
     karya: rKarya.items,
     info: rInfo.items,
     sources: {
       materi: rMateri.mode,
+      it_skills: rItSkills.mode,
       tugas: rTugas.mode,
       nilai: rNilai.mode,
       karya: rKarya.mode,
@@ -385,7 +441,7 @@ export async function loadPortalData(): Promise<PortalLoadResult> {
 // ---------- Check Supabase Table Availability ----------
 
 export async function checkSupabaseTables(): Promise<TableStatus[]> {
-  const tables: TableName[] = ['materi', 'tugas', 'nilai', 'karya', 'info'];
+  const tables: TableName[] = ['materi', 'it_skills', 'tugas', 'nilai', 'karya', 'info'];
   return Promise.all(
     tables.map(async (table) => {
       const { count, error } = await supabase
@@ -411,7 +467,7 @@ export async function checkSupabaseTables(): Promise<TableStatus[]> {
 // ---------- Spreadsheet Analyzer ----------
 
 export async function analyzeSpreadsheetData(): Promise<SheetTableAnalysis[]> {
-  const tables: TableName[] = ['materi', 'tugas', 'nilai', 'karya', 'info'];
+  const tables: SheetTableName[] = ['materi', 'tugas', 'nilai', 'karya', 'info'];
   return Promise.all(
     tables.map(async (table) => {
       const rows = (await fetchSheet<Record<string, string>>(SHEET_URLS[table])) || [];
@@ -515,6 +571,7 @@ export async function migrateTableToSupabase(
 
 export async function fetchSupabaseRowsDirect(table: TableName) {
   if (table === 'materi') return fetchSupabaseTable('materi', mapDbToMateri);
+  if (table === 'it_skills') return fetchSupabaseTable('it_skills', mapDbToItSkill);
   if (table === 'tugas') return fetchSupabaseTable('tugas', mapDbToTugas);
   if (table === 'nilai') return fetchSupabaseTable('nilai', mapDbToNilai);
   if (table === 'karya') return fetchSupabaseTable('karya', mapDbToKarya);
@@ -523,10 +580,11 @@ export async function fetchSupabaseRowsDirect(table: TableName) {
 
 export async function createSupabaseRow(
   table: TableName,
-  item: MateriItem | TugasItem | NilaiItem | KaryaItem | InfoItem
+  item: MateriItem | ItSkillItem | TugasItem | NilaiItem | KaryaItem | InfoItem
 ): Promise<{ error?: string }> {
   let payload: Record<string, unknown>;
   if (table === 'materi') payload = mapMateriToDb(item as MateriItem, true);
+  else if (table === 'it_skills') payload = mapItSkillToDb(item as ItSkillItem);
   else if (table === 'tugas') payload = mapTugasToDb(item as TugasItem, true);
   else if (table === 'nilai') payload = mapNilaiToDb(item as NilaiItem, true);
   else if (table === 'karya') payload = mapKaryaToDb(item as KaryaItem, true);
@@ -539,10 +597,11 @@ export async function createSupabaseRow(
 export async function updateSupabaseRow(
   table: TableName,
   id: number,
-  item: MateriItem | TugasItem | NilaiItem | KaryaItem | InfoItem
+  item: MateriItem | ItSkillItem | TugasItem | NilaiItem | KaryaItem | InfoItem
 ): Promise<{ error?: string }> {
   let payload: Record<string, unknown>;
   if (table === 'materi') payload = mapMateriToDb(item as MateriItem, true);
+  else if (table === 'it_skills') payload = mapItSkillToDb(item as ItSkillItem);
   else if (table === 'tugas') payload = mapTugasToDb(item as TugasItem, true);
   else if (table === 'nilai') payload = mapNilaiToDb(item as NilaiItem, true);
   else if (table === 'karya') payload = mapKaryaToDb(item as KaryaItem, true);

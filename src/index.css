@@ -302,10 +302,12 @@ section {
   pointer-events: none;
 }
 
-.nav-links a:hover {
+.nav-links a:hover,
+.nav-links a.active {
   color: var(--gold);
 }
-.nav-links a:hover .nav-squiggle {
+.nav-links a:hover .nav-squiggle,
+.nav-links a.active .nav-squiggle {
   opacity: 1;
   transform: scaleX(1);
 }
@@ -463,9 +465,11 @@ section {
 }
 
 .mobile-nav-links a:hover,
-.mobile-nav-links a:active {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(253, 208, 0, 0.35);
+.mobile-nav-links a:active,
+.mobile-nav-links a.active {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(253, 208, 0, 0.45);
+  color: var(--gold);
 }
 
 .mobile-sidebar-cta {
@@ -703,13 +707,19 @@ body.no-scroll {
 
 .hero-highlights {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.9rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.85rem;
   width: 100%;
-  max-width: 710px;
+  max-width: 880px;
   margin-top: 0.25rem;
 }
-@media (max-width: 640px) {
+@media (max-width: 900px) {
+  .hero-highlights {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    max-width: 560px;
+  }
+}
+@media (max-width: 560px) {
   .hero-highlights {
     grid-template-columns: 1fr;
     max-width: 340px;
@@ -717,6 +727,7 @@ body.no-scroll {
 }
 
 .hero-hl-card {
+  width: 100%;
   display: flex;
   align-items: center;
   gap: 0.8rem;
@@ -759,6 +770,7 @@ body.no-scroll {
   flex-shrink: 0;
 }
 .hero-hl-icon.sky { background: rgba(0, 161, 233, 0.24); }
+.hero-hl-icon.indigo { background: rgba(99, 102, 241, 0.28); }
 .hero-hl-icon.gold { background: rgba(253, 208, 0, 0.24); }
 .hero-hl-icon.ivory { background: rgba(251, 246, 234, 0.2); }
 
@@ -987,6 +999,12 @@ body.no-scroll {
   border-top: 4px solid var(--sky);
 }
 
+/* ---------- IT SKILLS (Soft Indigo Sapphire Mist) ---------- */
+#it-skills {
+  background: linear-gradient(180deg, #EEF2FF 0%, #E0E7FF 100%);
+  border-top: 4px solid var(--navy);
+}
+
 .tabs {
   display: flex;
   gap: 0.5rem;
@@ -1173,6 +1191,17 @@ body.no-scroll {
   color: #FFFFFF;
 }
 
+.card-access-btn.access-indigo {
+  background: linear-gradient(135deg, #E0E7FF 0%, #C7D2FE 100%);
+  color: #1E1B4B;
+  border: 1px solid rgba(79, 70, 229, 0.3);
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.16);
+}
+.card-access-btn.access-indigo .card-access-arrow {
+  background: #4F46E5;
+  color: #FFFFFF;
+}
+
 a.materi-card,
 a.karya-item,
 a.info-card {
@@ -1229,6 +1258,15 @@ a.karya-item:hover .card-access-btn.access-emerald {
 a.karya-item:hover .card-access-btn.access-emerald .card-access-arrow {
   background: #FFFFFF;
   color: #059669;
+}
+
+a.materi-card:hover .card-access-btn.access-indigo {
+  background: linear-gradient(135deg, #4F46E5 0%, #102380 100%);
+  color: #FFFFFF;
+}
+a.materi-card:hover .card-access-btn.access-indigo .card-access-arrow {
+  background: #FDD000;
+  color: #0B1A63;
 }
 
 .materi-grid {
@@ -1762,6 +1800,135 @@ a.karya-item:hover .card-access-btn.access-emerald .card-access-arrow {
   margin: 0 auto 2rem;
 }
 
+/* ---------- HALAMAN TERPISAH (MATERI, TUGAS & KUIS, CEK NILAI) ---------- */
+.subpage-hero {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, #0B1A63 0%, #102380 58%, #1731A8 100%);
+  color: #FFFFFF;
+  padding: 112px 0 3.2rem;
+}
+
+.subpage-hero-inner {
+  position: relative;
+  z-index: 2;
+}
+
+.subpage-starburst {
+  top: 24%;
+  right: 7%;
+  width: 56px;
+  height: 56px;
+  opacity: 0.82;
+}
+
+@media (max-width: 760px) {
+  .subpage-starburst {
+    top: 16%;
+    right: 4%;
+    width: 40px;
+    height: 40px;
+  }
+}
+
+.subpage-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.35rem;
+}
+
+.subpage-back-btn {
+  padding: 0.48rem 0.95rem;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  color: #FFFFFF;
+  font-family: var(--disp);
+  font-size: 0.8rem;
+  font-weight: 700;
+  transition: transform 0.2s, background 0.2s, border-color 0.2s, color 0.2s;
+}
+
+.subpage-back-btn:hover {
+  transform: translateX(-2px);
+  background: rgba(253, 208, 0, 0.18);
+  border-color: var(--gold);
+  color: var(--gold);
+}
+
+.subpage-crumb-trail {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  color: rgba(251, 246, 234, 0.72);
+}
+
+.subpage-title {
+  font-family: var(--disp);
+  font-weight: 800;
+  font-size: clamp(1.85rem, 3.6vw, 2.7rem);
+  letter-spacing: -0.02em;
+  color: #FFFFFF;
+  margin: 0.42rem 0 0.6rem;
+}
+
+.subpage-sub {
+  color: rgba(251, 246, 234, 0.84);
+  max-width: 650px;
+  font-size: 0.98rem;
+}
+
+.subpage-switcher {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-top: 1.6rem;
+}
+
+.subpage-pill {
+  padding: 0.56rem 1.15rem;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  color: rgba(255, 255, 255, 0.9);
+  font-family: var(--disp);
+  font-size: 0.84rem;
+  font-weight: 700;
+  transition: transform 0.2s, background 0.2s, border-color 0.2s, color 0.2s, box-shadow 0.2s;
+}
+
+.subpage-pill:hover:not(.active) {
+  transform: translateY(-1px);
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(253, 208, 0, 0.5);
+  color: #FFFFFF;
+}
+
+.subpage-pill.active {
+  background: linear-gradient(135deg, #FDD000 0%, #F1B23A 100%);
+  border-color: var(--gold);
+  color: var(--navy-dark);
+  box-shadow: 0 8px 20px rgba(241, 178, 58, 0.32);
+}
+
+.subpage-body {
+  padding-top: 3.4rem;
+  padding-bottom: 5.5rem;
+  min-height: 52vh;
+}
+
+.subpage-body .subject-switch {
+  margin-top: 0;
+}
+
+.nilai-page-full {
+  padding-top: 112px;
+  padding-bottom: 5.5rem;
+  min-height: 76vh;
+  border-top: none !important;
+}
+
 /* ---------- FOOTER (Organic Wave SVG + Royal Navy Base) ---------- */
 .attaufiq-footer {
   background: var(--bg);
@@ -1774,6 +1941,26 @@ a.karya-item:hover .card-access-btn.access-emerald .card-access-arrow {
   overflow: hidden;
   line-height: 0;
   background: var(--bg);
+}
+
+.footer-wave-wrap.from-home {
+  background: #FBF6EA;
+}
+
+.footer-wave-wrap.from-materi {
+  background: #DCF0FC;
+}
+
+.footer-wave-wrap.from-it-skills {
+  background: #E0E7FF;
+}
+
+.footer-wave-wrap.from-tugas {
+  background: #FDEBC1;
+}
+
+.footer-wave-wrap.from-nilai {
+  background: #102380;
 }
 
 .footer-wave-svg {
@@ -1935,6 +2122,9 @@ a.karya-item:hover .card-access-btn.access-emerald .card-access-arrow {
   }
   #materi .hscroll-wrap::after {
     background: linear-gradient(90deg, transparent, #E3F3FD 88%);
+  }
+  #it-skills .hscroll-wrap::after {
+    background: linear-gradient(90deg, transparent, #E6ECFF 88%);
   }
   #tugas .hscroll-wrap::after {
     background: linear-gradient(90deg, transparent, #FDF0CF 88%);
@@ -2735,7 +2925,7 @@ a.karya-item:hover .card-access-btn.access-emerald .card-access-arrow {
 
 .dash-status-grid {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 0.7rem;
   margin-bottom: 1rem;
 }

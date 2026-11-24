@@ -5,12 +5,14 @@ import { SubjectSwitch } from './components/SubjectSwitch';
 import { TeacherPortal } from './components/TeacherPortal';
 import {
   DEFAULT_INFO,
+  DEFAULT_IT_SKILLS,
   DEFAULT_KARYA,
   DEFAULT_MATERI,
   DEFAULT_NILAI,
   DEFAULT_TUGAS,
   getInfoVisual,
   type InfoItem,
+  type ItSkillItem,
   type KaryaItem,
   KAT_META,
   KELAS_LIST,
@@ -22,6 +24,14 @@ import {
   type TugasItem,
 } from './data/sheets';
 import { loadPortalData } from './data/supabaseDb';
+
+type PortalPage = 'home' | 'materi' | 'it-skills' | 'tugas' | 'nilai';
+
+interface RouteState {
+  isTeacher: boolean;
+  page: PortalPage;
+  anchor: string | null;
+}
 
 interface CardWrapperProps {
   link?: string;
@@ -81,26 +91,54 @@ function StarburstNode({ className }: { className: string }) {
   );
 }
 
-function checkIsTeacherRoute(): boolean {
-  if (typeof window === 'undefined') return false;
+function getRouteFromLocation(): RouteState {
+  if (typeof window === 'undefined') {
+    return { isTeacher: false, page: 'home', anchor: null };
+  }
   const path = window.location.pathname.toLowerCase().replace(/\/+$/, '');
   const hash = window.location.hash.toLowerCase();
   const params = new URLSearchParams(window.location.search);
-  return (
+
+  const isTeacher =
     path === '/guru' ||
     path.endsWith('/guru') ||
     hash === '#guru' ||
     hash.startsWith('#/guru') ||
-    params.has('guru')
-  );
+    params.has('guru');
+
+  if (isTeacher) {
+    return { isTeacher: true, page: 'home', anchor: null };
+  }
+
+  if (hash === '#/materi' || hash === '#materi' || path.endsWith('/materi')) {
+    return { isTeacher: false, page: 'materi', anchor: null };
+  }
+  if (hash === '#/it-skills' || hash === '#it-skills' || path.endsWith('/it-skills')) {
+    return { isTeacher: false, page: 'it-skills', anchor: null };
+  }
+  if (hash === '#/tugas' || hash === '#tugas' || path.endsWith('/tugas')) {
+    return { isTeacher: false, page: 'tugas', anchor: null };
+  }
+  if (hash === '#/nilai' || hash === '#nilai' || path.endsWith('/nilai')) {
+    return { isTeacher: false, page: 'nilai', anchor: null };
+  }
+
+  if (hash === '#info' || hash === '#karya') {
+    return { isTeacher: false, page: 'home', anchor: hash.slice(1) };
+  }
+
+  return { isTeacher: false, page: 'home', anchor: null };
 }
 
 const KARYA_HEIGHT_CLASSES = ['media-h-160', 'media-h-190', 'media-h-220'] as const;
 
 export default function App() {
-  const [isTeacherRoute, setIsTeacherRoute] = useState<boolean>(() => checkIsTeacherRoute());
+  const initialRoute = useMemo(() => getRouteFromLocation(), []);
+  const [isTeacherRoute, setIsTeacherRoute] = useState<boolean>(initialRoute.isTeacher);
+  const [activePage, setActivePage] = useState<PortalPage>(initialRoute.page);
 
   const [materiAll, setMateriAll] = useState<MateriItem[]>(DEFAULT_MATERI);
+  const [itSkillsAll, setItSkillsAll] = useState<ItSkillItem[]>(DEFAULT_IT_SKILLS);
   const [tugasAll, setTugasAll] = useState<TugasItem[]>(DEFAULT_TUGAS);
   const [nilaiAll, setNilaiAll] = useState<NilaiItem[]>(DEFAULT_NILAI);
   const [karyaAll, setKaryaAll] = useState<KaryaItem[]>(DEFAULT_KARYA);
@@ -121,15 +159,66 @@ export default function App() {
   const [scrolled, setScrolled] = useState(false);
   const [heroImgFailed, setHeroImgFailed] = useState(false);
 
+  const scrollToSection = useCallback((sectionId: string) => {
+    window.setTimeout(() => {
+      const target = document.getElementById(sectionId);
+      if (target) {
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 60);
+  }, []);
+
+  const navigateTo = useCallback(
+    (page: PortalPage, anchor?: string) => {
+      setSidebarOpen(false);
+      setActivePage(page);
+
+      const nextHash =
+        page === 'home'
+          ? anchor
+            ? `#${anchor}`
+            : '#/'
+          : `#/${page}`;
+
+      if (window.location.hash !== nextHash) {
+        window.history.pushState(null, '', nextHash);
+      }
+
+      if (page === 'home' && anchor) {
+        scrollToSection(anchor);
+      } else {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    },
+    [scrollToSection]
+  );
+
   useEffect(() => {
-    const syncRoute = () => setIsTeacherRoute(checkIsTeacherRoute());
+    const syncRoute = () => {
+      const next = getRouteFromLocation();
+      setIsTeacherRoute(next.isTeacher);
+      setActivePage(next.page);
+      if (!next.isTeacher) {
+        if (next.page === 'home' && next.anchor) {
+          scrollToSection(next.anchor);
+        } else {
+          window.scrollTo({ top: 0, behavior: 'auto' });
+        }
+      }
+    };
     window.addEventListener('hashchange', syncRoute);
     window.addEventListener('popstate', syncRoute);
     return () => {
       window.removeEventListener('hashchange', syncRoute);
       window.removeEventListener('popstate', syncRoute);
     };
-  }, []);
+  }, [scrollToSection]);
+
+  useEffect(() => {
+    if (!initialRoute.isTeacher && initialRoute.page === 'home' && initialRoute.anchor) {
+      scrollToSection(initialRoute.anchor);
+    }
+  }, [initialRoute, scrollToSection]);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 40);
@@ -141,6 +230,7 @@ export default function App() {
   const refreshData = useCallback(async () => {
     const res = await loadPortalData();
     setMateriAll(res.materi);
+    setItSkillsAll(res.itSkills);
     setTugasAll(res.tugas);
     setNilaiAll(res.nilai);
     setKaryaAll(res.karya);
@@ -153,21 +243,33 @@ export default function App() {
     }
   }, [isTeacherRoute, refreshData]);
 
-  // Reveal on scroll
+  // Reveal on scroll across page transitions
   useEffect(() => {
     if (isTeacherRoute) return;
-    const els = document.querySelectorAll('.reveal');
+    const els = Array.from(document.querySelectorAll('.reveal'));
+    if (!els.length) return;
+
     const io = new IntersectionObserver(
       (entries) => {
         entries.forEach((e) => {
-          if (e.isIntersecting) e.target.classList.add('in');
+          if (e.isIntersecting) {
+            e.target.classList.add('in');
+          }
         });
       },
-      { threshold: 0.1 }
+      { threshold: 0.08 }
     );
-    els.forEach((el) => io.observe(el));
+
+    els.forEach((el) => {
+      io.observe(el);
+      const rect = el.getBoundingClientRect();
+      if (rect.top < window.innerHeight * 0.95) {
+        el.classList.add('in');
+      }
+    });
+
     return () => io.disconnect();
-  }, [isTeacherRoute]);
+  }, [isTeacherRoute, activePage]);
 
   // Mobile sidebar Escape, resize, and body no-scroll sync
   useEffect(() => {
@@ -201,6 +303,12 @@ export default function App() {
       .filter((m) => m.Mapel === currentMapelMateri && m.Kelas === currentKelasMateri)
       .sort((a, b) => (parseInt(a.Urutan || '', 10) || 0) - (parseInt(b.Urutan || '', 10) || 0));
   }, [materiAll, currentMapelMateri, currentKelasMateri]);
+
+  const itSkillsItems = useMemo(() => {
+    return [...itSkillsAll].sort(
+      (a, b) => (parseInt(a.Urutan || '', 10) || 0) - (parseInt(b.Urutan || '', 10) || 0)
+    );
+  }, [itSkillsAll]);
 
   const tugasItems = useMemo(() => {
     return tugasAll.filter((t) => t.Mapel === currentMapelTugas && t.Kelas === currentKelasTugas);
@@ -266,7 +374,14 @@ export default function App() {
       <PointerFX />
       <nav id="navbar" className={scrolled ? 'scrolled' : 'over-hero'}>
         <div className="nav-inner">
-          <div className="brand">
+          <a
+            href="#/"
+            className="brand"
+            onClick={(e) => {
+              e.preventDefault();
+              navigateTo('home');
+            }}
+          >
             <img
               className="logo-mark"
               src="/assets/logo-attaufiq.png"
@@ -276,31 +391,73 @@ export default function App() {
               <span className="brand-name">INF &amp; KKA</span>
               <small>SMP–SMA Attaufiq · Jambi</small>
             </div>
-          </div>
+          </a>
           <div className="nav-links">
-            <a href="#info">
-              Info
+            <a
+              href="#/"
+              className={activePage === 'home' ? 'active' : undefined}
+              onClick={(e) => {
+                e.preventDefault();
+                navigateTo('home');
+              }}
+            >
+              Home
               <GoldSquiggle />
             </a>
-            <a href="#materi">
+            <a
+              href="#/materi"
+              className={activePage === 'materi' ? 'active' : undefined}
+              onClick={(e) => {
+                e.preventDefault();
+                navigateTo('materi');
+              }}
+            >
               Materi
               <GoldSquiggle />
             </a>
-            <a href="#tugas">
+            <a
+              href="#/it-skills"
+              className={activePage === 'it-skills' ? 'active' : undefined}
+              onClick={(e) => {
+                e.preventDefault();
+                navigateTo('it-skills');
+              }}
+            >
+              IT Skills
+              <GoldSquiggle />
+            </a>
+            <a
+              href="#/tugas"
+              className={activePage === 'tugas' ? 'active' : undefined}
+              onClick={(e) => {
+                e.preventDefault();
+                navigateTo('tugas');
+              }}
+            >
               Tugas &amp; Kuis
               <GoldSquiggle />
             </a>
-            <a href="#nilai">
+            <a
+              href="#/nilai"
+              className={activePage === 'nilai' ? 'active' : undefined}
+              onClick={(e) => {
+                e.preventDefault();
+                navigateTo('nilai');
+              }}
+            >
               Cek Nilai
-              <GoldSquiggle />
-            </a>
-            <a href="#karya">
-              Karya Siswa
               <GoldSquiggle />
             </a>
           </div>
           <div className="nav-right">
-            <a href="#materi" className="nav-cta">
+            <a
+              href="#/materi"
+              className="nav-cta"
+              onClick={(e) => {
+                e.preventDefault();
+                navigateTo('materi');
+              }}
+            >
               Mulai Belajar →
             </a>
             <button
@@ -343,524 +500,860 @@ export default function App() {
           </button>
         </div>
         <nav className="mobile-nav-links">
-          <a href="#info" onClick={() => setSidebarOpen(false)}>
-            📢 Info
+          <a
+            href="#/"
+            className={activePage === 'home' ? 'active' : undefined}
+            onClick={(e) => {
+              e.preventDefault();
+              navigateTo('home');
+            }}
+          >
+            🏠 Home
           </a>
-          <a href="#materi" onClick={() => setSidebarOpen(false)}>
+          <a
+            href="#/materi"
+            className={activePage === 'materi' ? 'active' : undefined}
+            onClick={(e) => {
+              e.preventDefault();
+              navigateTo('materi');
+            }}
+          >
             📚 Materi
           </a>
-          <a href="#tugas" onClick={() => setSidebarOpen(false)}>
+          <a
+            href="#/it-skills"
+            className={activePage === 'it-skills' ? 'active' : undefined}
+            onClick={(e) => {
+              e.preventDefault();
+              navigateTo('it-skills');
+            }}
+          >
+            🛠️ IT Skills
+          </a>
+          <a
+            href="#/tugas"
+            className={activePage === 'tugas' ? 'active' : undefined}
+            onClick={(e) => {
+              e.preventDefault();
+              navigateTo('tugas');
+            }}
+          >
             📝 Tugas &amp; Kuis
           </a>
-          <a href="#nilai" onClick={() => setSidebarOpen(false)}>
+          <a
+            href="#/nilai"
+            className={activePage === 'nilai' ? 'active' : undefined}
+            onClick={(e) => {
+              e.preventDefault();
+              navigateTo('nilai');
+            }}
+          >
             📊 Cek Nilai
-          </a>
-          <a href="#karya" onClick={() => setSidebarOpen(false)}>
-            🎨 Karya Siswa
           </a>
         </nav>
         <a
-          href="#materi"
+          href="#/materi"
           className="btn-primary mobile-sidebar-cta"
-          onClick={() => setSidebarOpen(false)}
+          onClick={(e) => {
+            e.preventDefault();
+            navigateTo('materi');
+          }}
         >
           Mulai Belajar →
         </a>
         <div className="mobile-sidebar-foot">Wahyu Dwi Prasetyo, S.Kom.Gr</div>
       </aside>
 
-      <section id="hero">
-        <div className="hero-media">
-          {!heroImgFailed ? (
-            <img
-              src="/hero-bg.png"
-              alt="Kampus Sekolah Islam Attaufiq"
-              onError={() => setHeroImgFailed(true)}
-            />
-          ) : null}
-        </div>
-        <div className="hero-navy-scrim" />
-        <div className="hero-stars" aria-hidden="true">
-          <span className="star-dot s1" />
-          <span className="star-dot s2" />
-          <span className="star-dot s3" />
-          <span className="star-dot s4" />
-          <span className="star-dot s5" />
-          <span className="star-dot s6" />
-        </div>
-        <div className="hero-orbit-layer" aria-hidden="true">
-          <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="hero-orbit-svg">
-            <defs>
-              <linearGradient id="attaufiqOrbitFade" x1="0%" y1="100%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor="#F1B23A" stopOpacity="0" />
-                <stop offset="35%" stopColor="#F1B23A" stopOpacity="0.95" />
-                <stop offset="100%" stopColor="#FDD000" stopOpacity="0.85" />
-              </linearGradient>
-            </defs>
-            <path
-              d="M12,92 C28,84 52,78 68,64 C80,53 86,32 92,14"
-              fill="none"
-              stroke="url(#attaufiqOrbitFade)"
-              strokeWidth="0.6"
-              vectorEffect="non-scaling-stroke"
-            />
-          </svg>
-          <StarburstNode className="node-main" />
-          <StarburstNode className="node-top" />
-          <StarburstNode className="node-left" />
-        </div>
-
-        <div className="hero-center">
-          <div className="hero-eyebrow-gold">
-            <span>Islami · Future Ready · Lab ICT 1 Attaufiq Jambi</span>
-          </div>
-          <h1 className="hero-title">
-            Website Pembelajaran{' '}
-            <span className="hero-gold-accent">
-              Informatika &amp; KKA
-              <svg aria-hidden="true" viewBox="0 0 280 14" preserveAspectRatio="none" className="hero-title-underline">
+      {activePage === 'home' ? (
+        <>
+          <section id="hero">
+            <div className="hero-media">
+              {!heroImgFailed ? (
+                <img
+                  src="/hero-bg.png"
+                  alt="Kampus Sekolah Islam Attaufiq"
+                  onError={() => setHeroImgFailed(true)}
+                />
+              ) : null}
+            </div>
+            <div className="hero-navy-scrim" />
+            <div className="hero-stars" aria-hidden="true">
+              <span className="star-dot s1" />
+              <span className="star-dot s2" />
+              <span className="star-dot s3" />
+              <span className="star-dot s4" />
+              <span className="star-dot s5" />
+              <span className="star-dot s6" />
+            </div>
+            <div className="hero-orbit-layer" aria-hidden="true">
+              <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="hero-orbit-svg">
+                <defs>
+                  <linearGradient id="attaufiqOrbitFade" x1="0%" y1="100%" x2="100%" y2="0%">
+                    <stop offset="0%" stopColor="#F1B23A" stopOpacity="0" />
+                    <stop offset="35%" stopColor="#F1B23A" stopOpacity="0.95" />
+                    <stop offset="100%" stopColor="#FDD000" stopOpacity="0.85" />
+                  </linearGradient>
+                </defs>
                 <path
-                  d="M3 8 C 70 2, 140 12, 210 5 C 240 2.5, 265 8, 277 6"
+                  d="M12,92 C28,84 52,78 68,64 C80,53 86,32 92,14"
                   fill="none"
-                  stroke="#FDD000"
-                  strokeWidth="3.5"
-                  strokeLinecap="round"
+                  stroke="url(#attaufiqOrbitFade)"
+                  strokeWidth="0.6"
+                  vectorEffect="non-scaling-stroke"
                 />
               </svg>
-            </span>
-          </h1>
-          <p className="hero-lead">
-            Portal belajar digital terpadu untuk SMP–SMA Attaufiq Jambi. Akses materi terstruktur,
-            tugas &amp; kuis kelas 7–12, cek nilai langsung, serta pameran karya kreatif siswa.
-          </p>
-
-          <div className="hero-highlights">
-            <div className="hero-hl-card">
-              <span className="hero-hl-icon sky">💻</span>
-              <div>
-                <strong>Informatika</strong>
-                <small>Kelas 7 – 12</small>
-              </div>
+              <StarburstNode className="node-main" />
+              <StarburstNode className="node-top" />
+              <StarburstNode className="node-left" />
             </div>
-            <div className="hero-hl-card">
-              <span className="hero-hl-icon gold">🤖</span>
-              <div>
-                <strong>Koding &amp; AI (KKA)</strong>
-                <small>Kurikulum Merdeka</small>
+
+            <div className="hero-center">
+              <div className="hero-eyebrow-gold">
+                <span>Islami · Future Ready · Lab ICT 1 Attaufiq Jambi</span>
               </div>
-            </div>
-            <div className="hero-hl-card">
-              <span className="hero-hl-icon ivory">📊</span>
-              <div>
-                <strong>Nilai &amp; Karya</strong>
-                <small>Real-Time Portal</small>
-              </div>
-            </div>
-          </div>
-
-          <div className="hero-cta-row">
-            <a href="#materi" className="btn-primary">
-              Buka Materi Kelas →
-            </a>
-            <a href="#tugas" className="btn-hero-outline">
-              Tugas &amp; Kuis
-            </a>
-          </div>
-        </div>
-
-        <div className="scroll-cue">
-          <span>SCROLL</span>
-          <div className="line" />
-        </div>
-      </section>
-
-      <section id="info">
-        <div className="container reveal">
-          <div className="eyebrow eyebrow-amber">Ruang Info</div>
-          <h2 className="section-title">Kabar &amp; pembaruan kelas</h2>
-          <p className="section-sub">
-            Update singkat seputar kegiatan mapel Informatika — dari media sosial, video
-            pembelajaran, sampai dokumentasi kelas.
-          </p>
-          <div className="swipe-hint">
-            <span>Geser untuk lihat lainnya</span>
-            <span className="arrow">→</span>
-          </div>
-          <div className="hscroll-wrap">
-            <div className="info-grid">
-              {infoAll.map((item, idx) => {
-                const jenis = item.Jenis || '';
-                const visual = getInfoVisual(jenis);
-                return (
-                  <CardWrapper
-                    key={`${item.Judul || 'info'}-${idx}`}
-                    link={item.Link}
-                    className="info-card"
+              <h1 className="hero-title">
+                Website Pembelajaran{' '}
+                <span className="hero-gold-accent">
+                  Informatika &amp; KKA
+                  <svg
+                    aria-hidden="true"
+                    viewBox="0 0 280 14"
+                    preserveAspectRatio="none"
+                    className="hero-title-underline"
                   >
-                    <MediaBox
-                      image={item.Image}
-                      gradClass={visual.gradClass}
-                      emoji={visual.emoji}
-                      badgeText={jenis.toUpperCase()}
-                      heightClass="media-h-130"
+                    <path
+                      d="M3 8 C 70 2, 140 12, 210 5 C 240 2.5, 265 8, 277 6"
+                      fill="none"
+                      stroke="#FDD000"
+                      strokeWidth="3.5"
+                      strokeLinecap="round"
                     />
-                    <div className="info-body">
-                      <h4>{item.Judul}</h4>
-                      <p>{item.Deskripsi}</p>
-                      <div className="meta">{item['Info Tambahan'] || ''}</div>
-                      {item.Link ? (
-                        <div className="card-access-btn access-amber">
-                          <span>Baca Info</span>
-                          <span className="card-access-arrow" aria-hidden="true">↗</span>
-                        </div>
-                      ) : null}
-                    </div>
-                  </CardWrapper>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      </section>
+                  </svg>
+                </span>
+              </h1>
+              <p className="hero-lead">
+                Portal belajar digital terpadu untuk SMP–SMA Attaufiq Jambi. Jelajahi kabar
+                kegiatan dan pameran karya kreatif siswa di halaman utama, atau buka halaman
+                Materi, IT Skills, Tugas &amp; Kuis, dan Cek Nilai dari menu navigasi.
+              </p>
 
-      <section id="materi">
-        <div className="container reveal">
-          <div className="eyebrow eyebrow-sky">Ruang Belajar</div>
-          <h2 className="section-title">Materi pembelajaran per jenjang</h2>
-          <p className="section-sub">
-            Pilih mapel dan kelas untuk melihat topik yang sedang dan akan dipelajari, mengikuti
-            alur Kurikulum Merdeka.
-          </p>
-          <SubjectSwitch value={currentMapelMateri} onChange={setCurrentMapelMateri} />
-          <div className="tabs">
-            {KELAS_LIST.map((kelas) => (
-              <button
-                key={kelas}
-                type="button"
-                className={`tab-btn${kelas === currentKelasMateri ? ' active' : ''}`}
-                onClick={() => setCurrentKelasMateri(kelas)}
-              >
-                {kelas}
-              </button>
-            ))}
-          </div>
-          <div className="swipe-hint">
-            <span>Geser untuk lihat lainnya</span>
-            <span className="arrow">→</span>
-          </div>
-          <div className="hscroll-wrap">
-            <div className="materi-grid">
-              {materiItems.length === 0 ? (
-                <p className="grid-empty-msg">
-                  Belum ada materi untuk {currentMapelMateri} · {currentKelasMateri}.
-                </p>
-              ) : (
-                materiItems.map((m, i) => (
-                  <CardWrapper
-                    key={`${m.Judul || 'materi'}-${i}`}
-                    link={m.Link}
-                    className={`materi-card card-accent-${(i % 4) + 1}`}
-                  >
-                    <CardMediaImage src={m.Image} />
-                    <div className="materi-num">
-                      {String(i + 1).padStart(2, '0')} · {m.Kelas}
-                    </div>
-                    <h4>{m.Judul}</h4>
-                    <p>{m.Deskripsi}</p>
-                    <div className="materi-tag">{m.Tag || ''}</div>
-                    {m.Link ? (
-                      <div className="card-access-btn access-sky">
-                        <span>Buka Materi</span>
-                        <span className="card-access-arrow" aria-hidden="true">→</span>
-                      </div>
-                    ) : null}
-                  </CardWrapper>
-                ))
-              )}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section id="tugas">
-        <div className="container reveal">
-          <div className="eyebrow eyebrow-navy">Ruang Kerja</div>
-          <h2 className="section-title">Tugas &amp; kuis per kelas</h2>
-          <p className="section-sub">
-            Pilih mapel dan kelas untuk melihat tugas &amp; kuis yang berlaku, lengkap dengan
-            status pengerjaannya.
-          </p>
-          <SubjectSwitch value={currentMapelTugas} onChange={setCurrentMapelTugas} />
-          <div className="tabs">
-            {KELAS_LIST.map((kelas) => (
-              <button
-                key={kelas}
-                type="button"
-                className={`tab-btn${kelas === currentKelasTugas ? ' active' : ''}`}
-                onClick={() => setCurrentKelasTugas(kelas)}
-              >
-                {kelas}
-              </button>
-            ))}
-          </div>
-          <div className="swipe-hint">
-            <span>Geser untuk lihat lainnya</span>
-            <span className="arrow">→</span>
-          </div>
-          <div className="hscroll-wrap">
-            <div className="materi-grid">
-              {tugasItems.length === 0 ? (
-                <p className="grid-empty-msg">
-                  Belum ada tugas/kuis untuk {currentMapelTugas} · {currentKelasTugas}.
-                </p>
-              ) : (
-                tugasItems.map((t, i) => {
-                  const sKey = statusKey(t.Status);
-                  const jenisLabel = t.Jenis || 'Tugas';
-                  return (
-                    <CardWrapper
-                      key={`${t.Judul || 'tugas'}-${i}`}
-                      link={t.Link}
-                      className={`materi-card card-accent-${((i + 1) % 4) + 1}${sKey === 'done' ? ' tugas-done' : ''}`}
-                    >
-                      <CardMediaImage src={t.Image} />
-                      <div className="tugas-top-row">
-                        <div className="materi-num">
-                          {t.Kelas} · {t['Info Waktu'] || ''}
-                        </div>
-                        <div className="tugas-pills">
-                          <span
-                            className={`pill ${jenisLabel.toLowerCase() === 'kuis' ? 'kuis' : 'tugas'}`}
-                          >
-                            {jenisLabel}
-                          </span>
-                          <span className={`pill status-${sKey}`}>{STATUS_LABEL[sKey]}</span>
-                        </div>
-                      </div>
-                      <h4>{t.Judul}</h4>
-                      <p>{t.Deskripsi}</p>
-                      {t.Link ? (
-                        <div className="card-access-btn access-navy">
-                          <span>{sKey === 'done' ? 'Lihat Detail' : 'Kerjakan Sekarang'}</span>
-                          <span className="card-access-arrow" aria-hidden="true">→</span>
-                        </div>
-                      ) : null}
-                    </CardWrapper>
-                  );
-                })
-              )}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section id="nilai">
-        <div className="nilai-stars" aria-hidden="true">
-          <StarburstNode className="nilai-star-1" />
-          <StarburstNode className="nilai-star-2" />
-          <StarburstNode className="nilai-star-3" />
-        </div>
-        <div className="container reveal">
-          <div className="eyebrow eyebrow-gold">Ruang Hasil</div>
-          <h2 className="section-title section-title-light">Cek nilai siswa</h2>
-          <p className="section-sub section-sub-light">
-            Masukkan NISN untuk melihat rekap nilai siswa secara langsung dari database portal
-            Attaufiq.
-          </p>
-          <div className="nilai-wrap">
-            <form className="nilai-form" onSubmit={handleCekNilai}>
-              <label htmlFor="nisnInput">NISN / Nomor Induk</label>
-              <input
-                id="nisnInput"
-                type="text"
-                placeholder="contoh: 3312001"
-                value={nisnInput}
-                onChange={(e) => setNisnInput(e.target.value)}
-              />
-              <label htmlFor="mapelSelect">Mapel</label>
-              <select
-                id="mapelSelect"
-                value={mapelSelect}
-                onChange={(e) => setMapelSelect(e.target.value as Mapel)}
-              >
-                <option value="Informatika">Informatika</option>
-                <option value="KKA">KKA (Koding &amp; Kecerdasan Artifisial)</option>
-              </select>
-              <button type="submit" className="btn-block">
-                Tampilkan Nilai →
-              </button>
-              <div className="nilai-hint">Masukkan NISN sesuai data sekolah</div>
-            </form>
-
-            <div className="nilai-result" id="nilaiResult">
-              {nilaiRows === null ? (
-                <div className="nilai-empty">
-                  <div className="icon">📊</div>
-                  <div>Rekap nilai akan muncul di sini setelah kamu mencari NISN.</div>
-                </div>
-              ) : nilaiRows.length === 0 ? (
-                <div className="nilai-empty">
-                  <div className="icon">⚠️</div>
+              <div className="hero-highlights">
+                <button
+                  type="button"
+                  className="hero-hl-card"
+                  onClick={() => navigateTo('materi')}
+                >
+                  <span className="hero-hl-icon sky">💻</span>
                   <div>
-                    Data untuk NISN {nilaiQuery?.nisn || '(kosong)'} pada mapel{' '}
-                    {nilaiQuery?.mapel} tidak ditemukan.
+                    <strong>Materi Kelas</strong>
+                    <small>Informatika &amp; KKA 7–12 →</small>
                   </div>
-                </div>
-              ) : (
-                <>
-                  <div className="nilai-header">
-                    <div>
-                      <div className="nilai-student-name">{nilaiRows[0].Nama}</div>
-                      <div className="nilai-student-meta">
-                        {nilaiRows[0].Kelas} · NISN {nilaiQuery?.nisn} · {nilaiQuery?.mapel}
-                      </div>
-                    </div>
-                    <div className="nilai-avg-box">
-                      <div className="nilai-avg-num">{nilaiAverage}</div>
-                      <div className="nilai-avg-label">Rata-rata</div>
-                    </div>
+                </button>
+                <button
+                  type="button"
+                  className="hero-hl-card"
+                  onClick={() => navigateTo('it-skills')}
+                >
+                  <span className="hero-hl-icon indigo">🛠️</span>
+                  <div>
+                    <strong>IT Skills</strong>
+                    <small>Praktik Skill Digital →</small>
                   </div>
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>Komponen</th>
-                        <th>Skor</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {nilaiRows.map((n, idx) => {
-                        const skor = parseInt(n.Skor || '', 10) || 0;
-                        return (
-                          <tr key={`${n.Komponen || 'komponen'}-${idx}`}>
-                            <td>{n.Komponen}</td>
-                            <td className="nilai-score-col">
-                              <div className="nilai-score-wrap">
-                                <span className="nilai-score-num">{skor}</span>
-                                <progress
-                                  className="score-progress"
-                                  max={100}
-                                  value={Math.max(0, Math.min(100, skor))}
-                                />
-                              </div>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-      </section>
+                </button>
+                <button
+                  type="button"
+                  className="hero-hl-card"
+                  onClick={() => navigateTo('tugas')}
+                >
+                  <span className="hero-hl-icon gold">📝</span>
+                  <div>
+                    <strong>Tugas &amp; Kuis</strong>
+                    <small>Kerjakan per Jenjang →</small>
+                  </div>
+                </button>
+                <button
+                  type="button"
+                  className="hero-hl-card"
+                  onClick={() => navigateTo('nilai')}
+                >
+                  <span className="hero-hl-icon ivory">📊</span>
+                  <div>
+                    <strong>Cek Nilai Siswa</strong>
+                    <small>Rekap Real-Time NISN →</small>
+                  </div>
+                </button>
+              </div>
 
-      <section id="karya">
-        <div className="container reveal">
-          <div className="eyebrow eyebrow-amber">Ruang Karya</div>
-          <h2 className="section-title">Karya siswa</h2>
-          <p className="section-sub">
-            Dokumentasi proyek, website, infografis, video, hingga proyek koding &amp; AI hasil
-            karya siswa Attaufiq.
-          </p>
-          <SubjectSwitch
-            value={currentMapelKarya}
-            onChange={(v) => {
-              setCurrentMapelKarya(v);
-              setCurrentKaryaFilter('Semua');
-            }}
-          />
-          <div className="karya-filter">
-            {karyaCategories.map((cat) => (
-              <button
-                key={cat}
-                type="button"
-                className={`tab-btn${cat === activeKaryaFilter ? ' active' : ''}`}
-                onClick={() => setCurrentKaryaFilter(cat)}
+              <div className="hero-cta-row">
+                <a
+                  href="#/materi"
+                  className="btn-primary"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    navigateTo('materi');
+                  }}
+                >
+                  Buka Materi Kelas →
+                </a>
+                <a
+                  href="#/tugas"
+                  className="btn-hero-outline"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    navigateTo('tugas');
+                  }}
+                >
+                  Tugas &amp; Kuis
+                </a>
+              </div>
+            </div>
+
+            <div className="scroll-cue">
+              <span>SCROLL</span>
+              <div className="line" />
+            </div>
+          </section>
+
+          <section id="info">
+            <div className="container reveal">
+              <div className="eyebrow eyebrow-amber">Ruang Info</div>
+              <h2 className="section-title">Kabar &amp; pembaruan kelas</h2>
+              <p className="section-sub">
+                Update singkat seputar kegiatan mapel Informatika — dari media sosial, video
+                pembelajaran, sampai dokumentasi kelas.
+              </p>
+              <div className="swipe-hint">
+                <span>Geser untuk lihat lainnya</span>
+                <span className="arrow">→</span>
+              </div>
+              <div className="hscroll-wrap">
+                <div className="info-grid">
+                  {infoAll.map((item, idx) => {
+                    const jenis = item.Jenis || '';
+                    const visual = getInfoVisual(jenis);
+                    return (
+                      <CardWrapper
+                        key={`${item.Judul || 'info'}-${idx}`}
+                        link={item.Link}
+                        className="info-card"
+                      >
+                        <MediaBox
+                          image={item.Image}
+                          gradClass={visual.gradClass}
+                          emoji={visual.emoji}
+                          badgeText={jenis.toUpperCase()}
+                          heightClass="media-h-130"
+                        />
+                        <div className="info-body">
+                          <h4>{item.Judul}</h4>
+                          <p>{item.Deskripsi}</p>
+                          <div className="meta">{item['Info Tambahan'] || ''}</div>
+                          {item.Link ? (
+                            <div className="card-access-btn access-amber">
+                              <span>Baca Info</span>
+                              <span className="card-access-arrow" aria-hidden="true">↗</span>
+                            </div>
+                          ) : null}
+                        </div>
+                      </CardWrapper>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section id="karya">
+            <div className="container reveal">
+              <div className="eyebrow eyebrow-emerald">Ruang Karya</div>
+              <h2 className="section-title">Karya siswa</h2>
+              <p className="section-sub">
+                Dokumentasi proyek, website, infografis, video, hingga proyek koding &amp; AI hasil
+                karya siswa Attaufiq.
+              </p>
+              <SubjectSwitch
+                value={currentMapelKarya}
+                onChange={(v) => {
+                  setCurrentMapelKarya(v);
+                  setCurrentKaryaFilter('Semua');
+                }}
+              />
+              <div className="karya-filter">
+                {karyaCategories.map((cat) => (
+                  <button
+                    key={cat}
+                    type="button"
+                    className={`tab-btn${cat === activeKaryaFilter ? ' active' : ''}`}
+                    onClick={() => setCurrentKaryaFilter(cat)}
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
+              <div className="swipe-hint">
+                <span>Geser untuk lihat lainnya</span>
+                <span className="arrow">→</span>
+              </div>
+              <div className="hscroll-wrap">
+                <div className="karya-grid">
+                  {karyaItems.length === 0 ? (
+                    <p className="grid-empty-msg">Belum ada karya untuk kategori ini.</p>
+                  ) : (
+                    karyaItems.map((k, i) => {
+                      const meta = KAT_META[k.Kategori || ''] || {
+                        gradClass: 'grad-default',
+                        emoji: '📁',
+                      };
+                      const heightClass = KARYA_HEIGHT_CLASSES[i % 3];
+                      return (
+                        <CardWrapper
+                          key={`${k.Judul || 'karya'}-${i}`}
+                          link={k.Link}
+                          className="karya-item"
+                        >
+                          <span className="karya-tag">{k.Kategori}</span>
+                          <MediaBox
+                            image={k.Image}
+                            gradClass={meta.gradClass}
+                            emoji={meta.emoji}
+                            heightClass={heightClass}
+                          />
+                          <div className="karya-info">
+                            <h4>{k.Judul}</h4>
+                            <p>
+                              {k.Pembuat ? `${k.Pembuat} · ` : ''}
+                              {k.Kelas}
+                            </p>
+                            {k.Link ? (
+                              <div className="card-access-btn access-emerald">
+                                <span>Lihat Karya</span>
+                                <span className="card-access-arrow" aria-hidden="true">↗</span>
+                              </div>
+                            ) : null}
+                          </div>
+                        </CardWrapper>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section id="cta">
+            <div className="cta-arch" aria-hidden="true" />
+            <div className="container reveal cta-inner">
+              <div className="cta-sun-badge">
+                <StarburstNode className="cta-sun" />
+              </div>
+              <h2>Punya pertanyaan seputar tugas atau materi?</h2>
+              <p>
+                Hubungi langsung guru ICT (Informatic and Communication Technology), Ayah Wahyu Dwi
+                Prasetyo, S.Kom.Gr, di ruang guru atau Lab ICT 1.
+              </p>
+              <a
+                href="https://wa.me/6285290699692"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn-primary"
               >
-                {cat}
-              </button>
-            ))}
-          </div>
-          <div className="swipe-hint">
-            <span>Geser untuk lihat lainnya</span>
-            <span className="arrow">→</span>
-          </div>
-          <div className="hscroll-wrap">
-            <div className="karya-grid">
-              {karyaItems.length === 0 ? (
-                <p className="grid-empty-msg">Belum ada karya untuk kategori ini.</p>
-              ) : (
-                karyaItems.map((k, i) => {
-                  const meta = KAT_META[k.Kategori || ''] || {
-                    gradClass: 'grad-default',
-                    emoji: '📁',
-                  };
-                  const heightClass = KARYA_HEIGHT_CLASSES[i % 3];
-                  return (
-                    <CardWrapper
-                      key={`${k.Judul || 'karya'}-${i}`}
-                      link={k.Link}
-                      className="karya-item"
-                    >
-                      <span className="karya-tag">{k.Kategori}</span>
-                      <MediaBox
-                        image={k.Image}
-                        gradClass={meta.gradClass}
-                        emoji={meta.emoji}
-                        heightClass={heightClass}
-                      />
-                      <div className="karya-info">
-                        <h4>{k.Judul}</h4>
-                        <p>
-                          {k.Pembuat ? `${k.Pembuat} · ` : ''}
-                          {k.Kelas}
-                        </p>
-                        {k.Link ? (
-                          <div className="card-access-btn access-emerald">
-                            <span>Lihat Karya</span>
-                            <span className="card-access-arrow" aria-hidden="true">↗</span>
+                Hubungi Teacher ICT →
+              </a>
+            </div>
+          </section>
+        </>
+      ) : activePage === 'materi' ? (
+        <>
+          <header className="subpage-hero">
+            <div className="hero-stars" aria-hidden="true">
+              <span className="star-dot s1" />
+              <span className="star-dot s2" />
+              <span className="star-dot s5" />
+            </div>
+            <StarburstNode className="subpage-starburst" />
+            <div className="container subpage-hero-inner">
+              <div className="subpage-breadcrumb">
+                <button
+                  type="button"
+                  className="subpage-back-btn"
+                  onClick={() => navigateTo('home')}
+                >
+                  ← Kembali ke Home
+                </button>
+                <span className="subpage-crumb-trail">Home / Materi Pembelajaran</span>
+              </div>
+              <div className="eyebrow eyebrow-gold">Ruang Belajar</div>
+              <h1 className="subpage-title">Materi pembelajaran per jenjang</h1>
+              <p className="subpage-sub">
+                Pilih mapel dan kelas untuk melihat topik yang sedang dan akan dipelajari,
+                mengikuti alur Kurikulum Merdeka.
+              </p>
+              <div className="subpage-switcher">
+                <button
+                  type="button"
+                  className="subpage-pill active"
+                  onClick={() => navigateTo('materi')}
+                >
+                  📚 Materi
+                </button>
+                <button
+                  type="button"
+                  className="subpage-pill"
+                  onClick={() => navigateTo('it-skills')}
+                >
+                  🛠️ IT Skills
+                </button>
+                <button
+                  type="button"
+                  className="subpage-pill"
+                  onClick={() => navigateTo('tugas')}
+                >
+                  📝 Tugas &amp; Kuis
+                </button>
+                <button
+                  type="button"
+                  className="subpage-pill"
+                  onClick={() => navigateTo('nilai')}
+                >
+                  📊 Cek Nilai
+                </button>
+              </div>
+            </div>
+          </header>
+
+          <section id="materi" className="subpage-body">
+            <div className="container reveal in">
+              <SubjectSwitch value={currentMapelMateri} onChange={setCurrentMapelMateri} />
+              <div className="tabs">
+                {KELAS_LIST.map((kelas) => (
+                  <button
+                    key={kelas}
+                    type="button"
+                    className={`tab-btn${kelas === currentKelasMateri ? ' active' : ''}`}
+                    onClick={() => setCurrentKelasMateri(kelas)}
+                  >
+                    {kelas}
+                  </button>
+                ))}
+              </div>
+              <div className="swipe-hint">
+                <span>Geser untuk lihat lainnya</span>
+                <span className="arrow">→</span>
+              </div>
+              <div className="hscroll-wrap">
+                <div className="materi-grid">
+                  {materiItems.length === 0 ? (
+                    <p className="grid-empty-msg">
+                      Belum ada materi untuk {currentMapelMateri} · {currentKelasMateri}.
+                    </p>
+                  ) : (
+                    materiItems.map((m, i) => (
+                      <CardWrapper
+                        key={`${m.Judul || 'materi'}-${i}`}
+                        link={m.Link}
+                        className={`materi-card card-accent-${(i % 4) + 1}`}
+                      >
+                        <CardMediaImage src={m.Image} />
+                        <div className="materi-num">
+                          {String(i + 1).padStart(2, '0')} · {m.Kelas}
+                        </div>
+                        <h4>{m.Judul}</h4>
+                        <p>{m.Deskripsi}</p>
+                        <div className="materi-tag">{m.Tag || ''}</div>
+                        {m.Link ? (
+                          <div className="card-access-btn access-sky">
+                            <span>Buka Materi</span>
+                            <span className="card-access-arrow" aria-hidden="true">→</span>
                           </div>
                         ) : null}
+                      </CardWrapper>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
+          </section>
+        </>
+      ) : activePage === 'it-skills' ? (
+        <>
+          <header className="subpage-hero">
+            <div className="hero-stars" aria-hidden="true">
+              <span className="star-dot s1" />
+              <span className="star-dot s2" />
+              <span className="star-dot s5" />
+            </div>
+            <StarburstNode className="subpage-starburst" />
+            <div className="container subpage-hero-inner">
+              <div className="subpage-breadcrumb">
+                <button
+                  type="button"
+                  className="subpage-back-btn"
+                  onClick={() => navigateTo('home')}
+                >
+                  ← Kembali ke Home
+                </button>
+                <span className="subpage-crumb-trail">Home / IT Skills</span>
+              </div>
+              <div className="eyebrow eyebrow-gold">Ruang Keahlian</div>
+              <h1 className="subpage-title">IT Skills &amp; praktik digital</h1>
+              <p className="subpage-sub">
+                Materi umum keterampilan teknologi praktis untuk seluruh siswa — mulai dari
+                produktivitas digital, desain, jaringan, hingga kecakapan Lab ICT Attaufiq.
+              </p>
+              <div className="subpage-switcher">
+                <button
+                  type="button"
+                  className="subpage-pill"
+                  onClick={() => navigateTo('materi')}
+                >
+                  📚 Materi
+                </button>
+                <button
+                  type="button"
+                  className="subpage-pill active"
+                  onClick={() => navigateTo('it-skills')}
+                >
+                  🛠️ IT Skills
+                </button>
+                <button
+                  type="button"
+                  className="subpage-pill"
+                  onClick={() => navigateTo('tugas')}
+                >
+                  📝 Tugas &amp; Kuis
+                </button>
+                <button
+                  type="button"
+                  className="subpage-pill"
+                  onClick={() => navigateTo('nilai')}
+                >
+                  📊 Cek Nilai
+                </button>
+              </div>
+            </div>
+          </header>
+
+          <section id="it-skills" className="subpage-body">
+            <div className="container reveal in">
+              <div className="swipe-hint">
+                <span>Geser untuk lihat lainnya</span>
+                <span className="arrow">→</span>
+              </div>
+              <div className="hscroll-wrap">
+                <div className="materi-grid">
+                  {itSkillsItems.length === 0 ? (
+                    <p className="grid-empty-msg">Belum ada modul IT Skills yang tersedia.</p>
+                  ) : (
+                    itSkillsItems.map((s, i) => (
+                      <CardWrapper
+                        key={`${s.Judul || 'it-skill'}-${i}`}
+                        link={s.Link}
+                        className={`materi-card card-accent-${(i % 4) + 1}`}
+                      >
+                        <CardMediaImage src={s.Image} />
+                        <div className="materi-num">
+                          {String(i + 1).padStart(2, '0')} · IT Skills
+                        </div>
+                        <h4>{s.Judul}</h4>
+                        <p>{s.Deskripsi}</p>
+                        <div className="materi-tag">{s.Tag || ''}</div>
+                        {s.Link ? (
+                          <div className="card-access-btn access-indigo">
+                            <span>Buka IT Skills</span>
+                            <span className="card-access-arrow" aria-hidden="true">→</span>
+                          </div>
+                        ) : null}
+                      </CardWrapper>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
+          </section>
+        </>
+      ) : activePage === 'tugas' ? (
+        <>
+          <header className="subpage-hero">
+            <div className="hero-stars" aria-hidden="true">
+              <span className="star-dot s1" />
+              <span className="star-dot s2" />
+              <span className="star-dot s5" />
+            </div>
+            <StarburstNode className="subpage-starburst" />
+            <div className="container subpage-hero-inner">
+              <div className="subpage-breadcrumb">
+                <button
+                  type="button"
+                  className="subpage-back-btn"
+                  onClick={() => navigateTo('home')}
+                >
+                  ← Kembali ke Home
+                </button>
+                <span className="subpage-crumb-trail">Home / Tugas &amp; Kuis</span>
+              </div>
+              <div className="eyebrow eyebrow-gold">Ruang Kerja</div>
+              <h1 className="subpage-title">Tugas &amp; kuis per kelas</h1>
+              <p className="subpage-sub">
+                Pilih mapel dan kelas untuk melihat tugas &amp; kuis yang berlaku, lengkap dengan
+                status pengerjaannya.
+              </p>
+              <div className="subpage-switcher">
+                <button
+                  type="button"
+                  className="subpage-pill"
+                  onClick={() => navigateTo('materi')}
+                >
+                  📚 Materi
+                </button>
+                <button
+                  type="button"
+                  className="subpage-pill"
+                  onClick={() => navigateTo('it-skills')}
+                >
+                  🛠️ IT Skills
+                </button>
+                <button
+                  type="button"
+                  className="subpage-pill active"
+                  onClick={() => navigateTo('tugas')}
+                >
+                  📝 Tugas &amp; Kuis
+                </button>
+                <button
+                  type="button"
+                  className="subpage-pill"
+                  onClick={() => navigateTo('nilai')}
+                >
+                  📊 Cek Nilai
+                </button>
+              </div>
+            </div>
+          </header>
+
+          <section id="tugas" className="subpage-body">
+            <div className="container reveal in">
+              <SubjectSwitch value={currentMapelTugas} onChange={setCurrentMapelTugas} />
+              <div className="tabs">
+                {KELAS_LIST.map((kelas) => (
+                  <button
+                    key={kelas}
+                    type="button"
+                    className={`tab-btn${kelas === currentKelasTugas ? ' active' : ''}`}
+                    onClick={() => setCurrentKelasTugas(kelas)}
+                  >
+                    {kelas}
+                  </button>
+                ))}
+              </div>
+              <div className="swipe-hint">
+                <span>Geser untuk lihat lainnya</span>
+                <span className="arrow">→</span>
+              </div>
+              <div className="hscroll-wrap">
+                <div className="materi-grid">
+                  {tugasItems.length === 0 ? (
+                    <p className="grid-empty-msg">
+                      Belum ada tugas/kuis untuk {currentMapelTugas} · {currentKelasTugas}.
+                    </p>
+                  ) : (
+                    tugasItems.map((t, i) => {
+                      const sKey = statusKey(t.Status);
+                      const jenisLabel = t.Jenis || 'Tugas';
+                      return (
+                        <CardWrapper
+                          key={`${t.Judul || 'tugas'}-${i}`}
+                          link={t.Link}
+                          className={`materi-card card-accent-${((i + 1) % 4) + 1}${sKey === 'done' ? ' tugas-done' : ''}`}
+                        >
+                          <CardMediaImage src={t.Image} />
+                          <div className="tugas-top-row">
+                            <div className="materi-num">
+                              {t.Kelas} · {t['Info Waktu'] || ''}
+                            </div>
+                            <div className="tugas-pills">
+                              <span
+                                className={`pill ${jenisLabel.toLowerCase() === 'kuis' ? 'kuis' : 'tugas'}`}
+                              >
+                                {jenisLabel}
+                              </span>
+                              <span className={`pill status-${sKey}`}>{STATUS_LABEL[sKey]}</span>
+                            </div>
+                          </div>
+                          <h4>{t.Judul}</h4>
+                          <p>{t.Deskripsi}</p>
+                          {t.Link ? (
+                            <div className="card-access-btn access-navy">
+                              <span>{sKey === 'done' ? 'Lihat Detail' : 'Kerjakan Sekarang'}</span>
+                              <span className="card-access-arrow" aria-hidden="true">→</span>
+                            </div>
+                          ) : null}
+                        </CardWrapper>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+            </div>
+          </section>
+        </>
+      ) : (
+        <section id="nilai" className="nilai-page-full">
+          <div className="nilai-stars" aria-hidden="true">
+            <StarburstNode className="nilai-star-1" />
+            <StarburstNode className="nilai-star-2" />
+            <StarburstNode className="nilai-star-3" />
+          </div>
+          <div className="container reveal in">
+            <div className="subpage-breadcrumb">
+              <button
+                type="button"
+                className="subpage-back-btn"
+                onClick={() => navigateTo('home')}
+              >
+                ← Kembali ke Home
+              </button>
+              <span className="subpage-crumb-trail">Home / Cek Nilai Siswa</span>
+            </div>
+            <div className="eyebrow eyebrow-gold">Ruang Hasil</div>
+            <h1 className="section-title section-title-light">Cek nilai siswa</h1>
+            <p className="section-sub section-sub-light">
+              Masukkan NISN untuk melihat rekap nilai siswa secara langsung dari database portal
+              Attaufiq.
+            </p>
+            <div className="subpage-switcher">
+              <button
+                type="button"
+                className="subpage-pill"
+                onClick={() => navigateTo('materi')}
+              >
+                📚 Materi
+              </button>
+              <button
+                type="button"
+                className="subpage-pill"
+                onClick={() => navigateTo('it-skills')}
+              >
+                🛠️ IT Skills
+              </button>
+              <button
+                type="button"
+                className="subpage-pill"
+                onClick={() => navigateTo('tugas')}
+              >
+                📝 Tugas &amp; Kuis
+              </button>
+              <button
+                type="button"
+                className="subpage-pill active"
+                onClick={() => navigateTo('nilai')}
+              >
+                📊 Cek Nilai
+              </button>
+            </div>
+            <div className="nilai-wrap">
+              <form className="nilai-form" onSubmit={handleCekNilai}>
+                <label htmlFor="nisnInput">NISN / Nomor Induk</label>
+                <input
+                  id="nisnInput"
+                  type="text"
+                  placeholder="contoh: 3312001"
+                  value={nisnInput}
+                  onChange={(e) => setNisnInput(e.target.value)}
+                />
+                <label htmlFor="mapelSelect">Mapel</label>
+                <select
+                  id="mapelSelect"
+                  value={mapelSelect}
+                  onChange={(e) => setMapelSelect(e.target.value as Mapel)}
+                >
+                  <option value="Informatika">Informatika</option>
+                  <option value="KKA">KKA (Koding &amp; Kecerdasan Artifisial)</option>
+                </select>
+                <button type="submit" className="btn-block">
+                  Tampilkan Nilai →
+                </button>
+                <div className="nilai-hint">Masukkan NISN sesuai data sekolah</div>
+              </form>
+
+              <div className="nilai-result" id="nilaiResult">
+                {nilaiRows === null ? (
+                  <div className="nilai-empty">
+                    <div className="icon">📊</div>
+                    <div>Rekap nilai akan muncul di sini setelah kamu mencari NISN.</div>
+                  </div>
+                ) : nilaiRows.length === 0 ? (
+                  <div className="nilai-empty">
+                    <div className="icon">⚠️</div>
+                    <div>
+                      Data untuk NISN {nilaiQuery?.nisn || '(kosong)'} pada mapel{' '}
+                      {nilaiQuery?.mapel} tidak ditemukan.
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="nilai-header">
+                      <div>
+                        <div className="nilai-student-name">{nilaiRows[0].Nama}</div>
+                        <div className="nilai-student-meta">
+                          {nilaiRows[0].Kelas} · NISN {nilaiQuery?.nisn} · {nilaiQuery?.mapel}
+                        </div>
                       </div>
-                    </CardWrapper>
-                  );
-                })
-              )}
+                      <div className="nilai-avg-box">
+                        <div className="nilai-avg-num">{nilaiAverage}</div>
+                        <div className="nilai-avg-label">Rata-rata</div>
+                      </div>
+                    </div>
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>Komponen</th>
+                          <th>Skor</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {nilaiRows.map((n, idx) => {
+                          const skor = parseInt(n.Skor || '', 10) || 0;
+                          return (
+                            <tr key={`${n.Komponen || 'komponen'}-${idx}`}>
+                              <td>{n.Komponen}</td>
+                              <td className="nilai-score-col">
+                                <div className="nilai-score-wrap">
+                                  <span className="nilai-score-num">{skor}</span>
+                                  <progress
+                                    className="score-progress"
+                                    max={100}
+                                    value={Math.max(0, Math.min(100, skor))}
+                                  />
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </>
+                )}
+              </div>
             </div>
           </div>
-        </div>
-      </section>
-
-      <section id="cta">
-        <div className="cta-arch" aria-hidden="true" />
-        <div className="container reveal cta-inner">
-          <div className="cta-sun-badge">
-            <StarburstNode className="cta-sun" />
-          </div>
-          <h2>Punya pertanyaan seputar tugas atau materi?</h2>
-          <p>
-            Hubungi langsung guru ICT (Informatic and Communication Technology), Ayah Wahyu Dwi
-            Prasetyo, S.Kom.Gr, di ruang guru atau Lab ICT 1.
-          </p>
-          <a
-            href="https://wa.me/6285290699692"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="btn-primary"
-          >
-            Hubungi Teacher ICT →
-          </a>
-        </div>
-      </section>
+        </section>
+      )}
 
       <footer className="attaufiq-footer">
-        <div className="footer-wave-wrap" aria-hidden="true">
+        <div className={`footer-wave-wrap from-${activePage}`} aria-hidden="true">
           <svg viewBox="0 0 1440 120" preserveAspectRatio="none" className="footer-wave-svg">
             <path
               d="M0,40 C240,110 480,0 720,48 C960,96 1200,12 1440,54 L1440,120 L0,120 Z"
               fill="#102380"
             />
+            {activePage === 'nilai' ? (
+              <path
+                d="M0,40 C240,110 480,0 720,48 C960,96 1200,12 1440,54"
+                fill="none"
+                stroke="rgba(253, 208, 0, 0.36)"
+                strokeWidth="3"
+              />
+            ) : null}
           </svg>
         </div>
         <div className="footer-navy-body">
@@ -882,16 +1375,59 @@ export default function App() {
                 <h5>Navigasi</h5>
                 <ul>
                   <li>
-                    <a href="#materi">Materi Pembelajaran</a>
+                    <a
+                      href="#/"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        navigateTo('home');
+                      }}
+                    >
+                      Home
+                    </a>
                   </li>
                   <li>
-                    <a href="#tugas">Tugas &amp; Kuis</a>
+                    <a
+                      href="#/materi"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        navigateTo('materi');
+                      }}
+                    >
+                      Materi Pembelajaran
+                    </a>
                   </li>
                   <li>
-                    <a href="#nilai">Cek Nilai</a>
+                    <a
+                      href="#/it-skills"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        navigateTo('it-skills');
+                      }}
+                    >
+                      IT Skills
+                    </a>
                   </li>
                   <li>
-                    <a href="#karya">Karya Siswa</a>
+                    <a
+                      href="#/tugas"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        navigateTo('tugas');
+                      }}
+                    >
+                      Tugas &amp; Kuis
+                    </a>
+                  </li>
+                  <li>
+                    <a
+                      href="#/nilai"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        navigateTo('nilai');
+                      }}
+                    >
+                      Cek Nilai
+                    </a>
                   </li>
                 </ul>
               </div>
@@ -899,7 +1435,15 @@ export default function App() {
                 <h5>Sekolah</h5>
                 <ul>
                   <li>
-                    <a href="#hero">Yayasan Attaufiq Jambi</a>
+                    <a
+                      href="#/"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        navigateTo('home');
+                      }}
+                    >
+                      Yayasan Attaufiq Jambi
+                    </a>
                   </li>
                   <li>
                     <a
