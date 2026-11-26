@@ -1,6 +1,14 @@
-import { type FormEvent, type ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
+import { type FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
+import { AnimatePresence, motion, MotionConfig } from 'motion/react';
 import { CardMediaImage, MediaBox } from './components/MediaBox';
 import { PointerFX } from './components/PointerFX';
+import {
+  SILKY_EASE,
+  SmoothCard,
+  SmoothGrid,
+  SmoothHeroItem,
+  SmoothSection,
+} from './components/SmoothMotion';
 import { SubjectSwitch } from './components/SubjectSwitch';
 import { TeacherPortal } from './components/TeacherPortal';
 import {
@@ -31,23 +39,6 @@ interface RouteState {
   isTeacher: boolean;
   page: PortalPage;
   anchor: string | null;
-}
-
-interface CardWrapperProps {
-  link?: string;
-  className: string;
-  children: ReactNode;
-}
-
-function CardWrapper({ link, className, children }: CardWrapperProps) {
-  if (link) {
-    return (
-      <a className={className} href={link} target="_blank" rel="noopener noreferrer">
-        {children}
-      </a>
-    );
-  }
-  return <div className={className}>{children}</div>;
 }
 
 function GoldSquiggle() {
@@ -243,34 +234,6 @@ export default function App() {
     }
   }, [isTeacherRoute, refreshData]);
 
-  // Reveal on scroll across page transitions
-  useEffect(() => {
-    if (isTeacherRoute) return;
-    const els = Array.from(document.querySelectorAll('.reveal'));
-    if (!els.length) return;
-
-    const io = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((e) => {
-          if (e.isIntersecting) {
-            e.target.classList.add('in');
-          }
-        });
-      },
-      { threshold: 0.08 }
-    );
-
-    els.forEach((el) => {
-      io.observe(el);
-      const rect = el.getBoundingClientRect();
-      if (rect.top < window.innerHeight * 0.95) {
-        el.classList.add('in');
-      }
-    });
-
-    return () => io.disconnect();
-  }, [isTeacherRoute, activePage]);
-
   // Mobile sidebar Escape, resize, and body no-scroll sync
   useEffect(() => {
     if (sidebarOpen) {
@@ -362,15 +325,15 @@ export default function App() {
   // Dedicated route for Teacher-only Database Portal (/guru, #/guru, ?guru)
   if (isTeacherRoute) {
     return (
-      <>
+      <MotionConfig reducedMotion="user">
         <PointerFX />
         <TeacherPortal />
-      </>
+      </MotionConfig>
     );
   }
 
   return (
-    <>
+    <MotionConfig reducedMotion="user">
       <PointerFX />
       <nav id="navbar" className={scrolled ? 'scrolled' : 'over-hero'}>
         <div className="nav-inner">
@@ -564,304 +527,332 @@ export default function App() {
         <div className="mobile-sidebar-foot">Wahyu Dwi Prasetyo, S.Kom.Gr</div>
       </aside>
 
-      {activePage === 'home' ? (
-        <>
-          <section id="hero">
-            <div className="hero-media">
-              {!heroImgFailed ? (
-                <img
-                  src="/hero-bg.png"
-                  alt="Kampus Sekolah Islam Attaufiq"
-                  onError={() => setHeroImgFailed(true)}
-                />
-              ) : null}
-            </div>
-            <div className="hero-navy-scrim" />
-            <div className="hero-stars" aria-hidden="true">
-              <span className="star-dot s1" />
-              <span className="star-dot s2" />
-              <span className="star-dot s3" />
-              <span className="star-dot s4" />
-              <span className="star-dot s5" />
-              <span className="star-dot s6" />
-            </div>
-            <div className="hero-orbit-layer" aria-hidden="true">
-              <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="hero-orbit-svg">
-                <defs>
-                  <linearGradient id="attaufiqOrbitFade" x1="0%" y1="100%" x2="100%" y2="0%">
-                    <stop offset="0%" stopColor="#F1B23A" stopOpacity="0" />
-                    <stop offset="35%" stopColor="#F1B23A" stopOpacity="0.95" />
-                    <stop offset="100%" stopColor="#FDD000" stopOpacity="0.85" />
-                  </linearGradient>
-                </defs>
-                <path
-                  d="M12,92 C28,84 52,78 68,64 C80,53 86,32 92,14"
-                  fill="none"
-                  stroke="url(#attaufiqOrbitFade)"
-                  strokeWidth="0.6"
-                  vectorEffect="non-scaling-stroke"
-                />
-              </svg>
-              <StarburstNode className="node-main" />
-              <StarburstNode className="node-top" />
-              <StarburstNode className="node-left" />
-            </div>
-
-            <div className="hero-center">
-              <div className="hero-eyebrow-gold">
-                <span>Islami · Future Ready · Lab ICT 1 Attaufiq Jambi</span>
-              </div>
-              <h1 className="hero-title">
-                Website Pembelajaran{' '}
-                <span className="hero-gold-accent">
-                  Informatika &amp; KKA
-                  <svg
-                    aria-hidden="true"
-                    viewBox="0 0 280 14"
-                    preserveAspectRatio="none"
-                    className="hero-title-underline"
-                  >
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={activePage}
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -8 }}
+          transition={{ duration: 0.3, ease: SILKY_EASE }}
+        >
+          {activePage === 'home' ? (
+            <>
+              <section id="hero">
+                <div className="hero-media">
+                  {!heroImgFailed ? (
+                    <img
+                      src="/hero-bg.png"
+                      alt="Kampus Sekolah Islam Attaufiq"
+                      onError={() => setHeroImgFailed(true)}
+                    />
+                  ) : null}
+                </div>
+                <div className="hero-navy-scrim" />
+                <div className="hero-stars" aria-hidden="true">
+                  <span className="star-dot s1" />
+                  <span className="star-dot s2" />
+                  <span className="star-dot s3" />
+                  <span className="star-dot s4" />
+                  <span className="star-dot s5" />
+                  <span className="star-dot s6" />
+                </div>
+                <div className="hero-orbit-layer" aria-hidden="true">
+                  <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="hero-orbit-svg">
+                    <defs>
+                      <linearGradient id="attaufiqOrbitFade" x1="0%" y1="100%" x2="100%" y2="0%">
+                        <stop offset="0%" stopColor="#F1B23A" stopOpacity="0" />
+                        <stop offset="35%" stopColor="#F1B23A" stopOpacity="0.95" />
+                        <stop offset="100%" stopColor="#FDD000" stopOpacity="0.85" />
+                      </linearGradient>
+                    </defs>
                     <path
-                      d="M3 8 C 70 2, 140 12, 210 5 C 240 2.5, 265 8, 277 6"
+                      d="M12,92 C28,84 52,78 68,64 C80,53 86,32 92,14"
                       fill="none"
-                      stroke="#FDD000"
-                      strokeWidth="3.5"
-                      strokeLinecap="round"
+                      stroke="url(#attaufiqOrbitFade)"
+                      strokeWidth="0.6"
+                      vectorEffect="non-scaling-stroke"
                     />
                   </svg>
-                </span>
-              </h1>
-              <p className="hero-lead">
-                Portal belajar digital terpadu untuk SMP–SMA Attaufiq Jambi. Jelajahi kabar
-                kegiatan dan pameran karya kreatif siswa di halaman utama, atau buka halaman
-                Materi, IT Skills, Tugas &amp; Kuis, dan Cek Nilai dari menu navigasi.
-              </p>
-
-              <div className="hero-highlights">
-                <button
-                  type="button"
-                  className="hero-hl-card"
-                  onClick={() => navigateTo('materi')}
-                >
-                  <span className="hero-hl-icon sky">💻</span>
-                  <div>
-                    <strong>Materi Kelas</strong>
-                    <small>Informatika &amp; KKA 7–12 →</small>
-                  </div>
-                </button>
-                <button
-                  type="button"
-                  className="hero-hl-card"
-                  onClick={() => navigateTo('it-skills')}
-                >
-                  <span className="hero-hl-icon indigo">🛠️</span>
-                  <div>
-                    <strong>IT Skills</strong>
-                    <small>Praktik Skill Digital →</small>
-                  </div>
-                </button>
-                <button
-                  type="button"
-                  className="hero-hl-card"
-                  onClick={() => navigateTo('tugas')}
-                >
-                  <span className="hero-hl-icon gold">📝</span>
-                  <div>
-                    <strong>Tugas &amp; Kuis</strong>
-                    <small>Kerjakan per Jenjang →</small>
-                  </div>
-                </button>
-                <button
-                  type="button"
-                  className="hero-hl-card"
-                  onClick={() => navigateTo('nilai')}
-                >
-                  <span className="hero-hl-icon ivory">📊</span>
-                  <div>
-                    <strong>Cek Nilai Siswa</strong>
-                    <small>Rekap Real-Time NISN →</small>
-                  </div>
-                </button>
-              </div>
-
-              <div className="hero-cta-row">
-                <a
-                  href="#/materi"
-                  className="btn-primary"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    navigateTo('materi');
-                  }}
-                >
-                  Buka Materi Kelas →
-                </a>
-                <a
-                  href="#/tugas"
-                  className="btn-hero-outline"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    navigateTo('tugas');
-                  }}
-                >
-                  Tugas &amp; Kuis
-                </a>
-              </div>
-            </div>
-
-            <div className="scroll-cue">
-              <span>SCROLL</span>
-              <div className="line" />
-            </div>
-          </section>
-
-          <section id="info">
-            <div className="container reveal">
-              <div className="eyebrow eyebrow-amber">Ruang Info</div>
-              <h2 className="section-title">Kabar &amp; pembaruan kelas</h2>
-              <p className="section-sub">
-                Update singkat seputar kegiatan mapel Informatika — dari media sosial, video
-                pembelajaran, sampai dokumentasi kelas.
-              </p>
-              <div className="swipe-hint">
-                <span>Geser untuk lihat lainnya</span>
-                <span className="arrow">→</span>
-              </div>
-              <div className="hscroll-wrap">
-                <div className="info-grid">
-                  {infoAll.map((item, idx) => {
-                    const jenis = item.Jenis || '';
-                    const visual = getInfoVisual(jenis);
-                    return (
-                      <CardWrapper
-                        key={`${item.Judul || 'info'}-${idx}`}
-                        link={item.Link}
-                        className="info-card"
-                      >
-                        <MediaBox
-                          image={item.Image}
-                          gradClass={visual.gradClass}
-                          emoji={visual.emoji}
-                          badgeText={jenis.toUpperCase()}
-                          heightClass="media-h-130"
-                        />
-                        <div className="info-body">
-                          <h4>{item.Judul}</h4>
-                          <p>{item.Deskripsi}</p>
-                          <div className="meta">{item['Info Tambahan'] || ''}</div>
-                          {item.Link ? (
-                            <div className="card-access-btn access-amber">
-                              <span>Baca Info</span>
-                              <span className="card-access-arrow" aria-hidden="true">↗</span>
-                            </div>
-                          ) : null}
-                        </div>
-                      </CardWrapper>
-                    );
-                  })}
+                  <StarburstNode className="node-main" />
+                  <StarburstNode className="node-top" />
+                  <StarburstNode className="node-left" />
                 </div>
-              </div>
-            </div>
-          </section>
 
-          <section id="karya">
-            <div className="container reveal">
-              <div className="eyebrow eyebrow-emerald">Ruang Karya</div>
-              <h2 className="section-title">Karya siswa</h2>
-              <p className="section-sub">
-                Dokumentasi proyek, website, infografis, video, hingga proyek koding &amp; AI hasil
-                karya siswa Attaufiq.
-              </p>
-              <SubjectSwitch
-                value={currentMapelKarya}
-                onChange={(v) => {
-                  setCurrentMapelKarya(v);
-                  setCurrentKaryaFilter('Semua');
-                }}
-              />
-              <div className="karya-filter">
-                {karyaCategories.map((cat) => (
-                  <button
-                    key={cat}
-                    type="button"
-                    className={`tab-btn${cat === activeKaryaFilter ? ' active' : ''}`}
-                    onClick={() => setCurrentKaryaFilter(cat)}
-                  >
-                    {cat}
-                  </button>
-                ))}
-              </div>
-              <div className="swipe-hint">
-                <span>Geser untuk lihat lainnya</span>
-                <span className="arrow">→</span>
-              </div>
-              <div className="hscroll-wrap">
-                <div className="karya-grid">
-                  {karyaItems.length === 0 ? (
-                    <p className="grid-empty-msg">Belum ada karya untuk kategori ini.</p>
-                  ) : (
-                    karyaItems.map((k, i) => {
-                      const meta = KAT_META[k.Kategori || ''] || {
-                        gradClass: 'grad-default',
-                        emoji: '📁',
-                      };
-                      const heightClass = KARYA_HEIGHT_CLASSES[i % 3];
-                      return (
-                        <CardWrapper
-                          key={`${k.Judul || 'karya'}-${i}`}
-                          link={k.Link}
-                          className="karya-item"
+                <div className="hero-center">
+                  <SmoothHeroItem delay={0.04}>
+                    <div className="hero-eyebrow-gold">
+                      <span>Islami · Future Ready · Lab ICT 1 Attaufiq Jambi</span>
+                    </div>
+                  </SmoothHeroItem>
+                  <SmoothHeroItem delay={0.1}>
+                    <h1 className="hero-title">
+                      Website Pembelajaran{' '}
+                      <span className="hero-gold-accent">
+                        Informatika &amp; KKA
+                        <svg
+                          aria-hidden="true"
+                          viewBox="0 0 280 14"
+                          preserveAspectRatio="none"
+                          className="hero-title-underline"
                         >
-                          <span className="karya-tag">{k.Kategori}</span>
-                          <MediaBox
-                            image={k.Image}
-                            gradClass={meta.gradClass}
-                            emoji={meta.emoji}
-                            heightClass={heightClass}
+                          <path
+                            d="M3 8 C 70 2, 140 12, 210 5 C 240 2.5, 265 8, 277 6"
+                            fill="none"
+                            stroke="#FDD000"
+                            strokeWidth="3.5"
+                            strokeLinecap="round"
                           />
-                          <div className="karya-info">
-                            <h4>{k.Judul}</h4>
-                            <p>
-                              {k.Pembuat ? `${k.Pembuat} · ` : ''}
-                              {k.Kelas}
-                            </p>
-                            {k.Link ? (
-                              <div className="card-access-btn access-emerald">
-                                <span>Lihat Karya</span>
+                        </svg>
+                      </span>
+                    </h1>
+                  </SmoothHeroItem>
+                  <SmoothHeroItem delay={0.16}>
+                    <p className="hero-lead">
+                      Portal belajar digital terpadu untuk SMP–SMA Attaufiq Jambi. Jelajahi kabar
+                      kegiatan dan pameran karya kreatif siswa di halaman utama, atau buka halaman
+                      Materi, IT Skills, Tugas &amp; Kuis, dan Cek Nilai dari menu navigasi.
+                    </p>
+                  </SmoothHeroItem>
+
+                  <div className="hero-highlights">
+                    {[
+                      {
+                        page: 'materi' as PortalPage,
+                        icon: '💻',
+                        iconCls: 'sky',
+                        title: 'Materi Kelas',
+                        sub: 'Informatika & KKA 7–12 →',
+                      },
+                      {
+                        page: 'it-skills' as PortalPage,
+                        icon: '🛠️',
+                        iconCls: 'indigo',
+                        title: 'IT Skills',
+                        sub: 'Praktik Skill Digital →',
+                      },
+                      {
+                        page: 'tugas' as PortalPage,
+                        icon: '📝',
+                        iconCls: 'gold',
+                        title: 'Tugas & Kuis',
+                        sub: 'Kerjakan per Jenjang →',
+                      },
+                      {
+                        page: 'nilai' as PortalPage,
+                        icon: '📊',
+                        iconCls: 'ivory',
+                        title: 'Cek Nilai Siswa',
+                        sub: 'Rekap Real-Time NISN →',
+                      },
+                    ].map((card, idx) => (
+                      <motion.button
+                        key={card.page}
+                        type="button"
+                        className="hero-hl-card"
+                        onClick={() => navigateTo(card.page)}
+                        initial={{ opacity: 0, y: 18, scale: 0.96 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        whileHover={{ y: -3, transition: { duration: 0.22, ease: SILKY_EASE } }}
+                        whileTap={{ scale: 0.98 }}
+                        transition={{ duration: 0.48, delay: 0.22 + idx * 0.06, ease: SILKY_EASE }}
+                      >
+                        <span className={`hero-hl-icon ${card.iconCls}`}>{card.icon}</span>
+                        <div>
+                          <strong>{card.title}</strong>
+                          <small>{card.sub}</small>
+                        </div>
+                      </motion.button>
+                    ))}
+                  </div>
+
+                  <SmoothHeroItem delay={0.44}>
+                    <div className="hero-cta-row">
+                      <a
+                        href="#/materi"
+                        className="btn-primary"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          navigateTo('materi');
+                        }}
+                      >
+                        Buka Materi Kelas →
+                      </a>
+                      <a
+                        href="#/tugas"
+                        className="btn-hero-outline"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          navigateTo('tugas');
+                        }}
+                      >
+                        Tugas &amp; Kuis
+                      </a>
+                    </div>
+                  </SmoothHeroItem>
+                </div>
+
+                <div className="scroll-cue">
+                  <span>SCROLL</span>
+                  <div className="line" />
+                </div>
+              </section>
+
+              <section id="info">
+                <SmoothSection className="container">
+                  <div className="eyebrow eyebrow-amber">Ruang Info</div>
+                  <h2 className="section-title">Kabar &amp; pembaruan kelas</h2>
+                  <p className="section-sub">
+                    Update singkat seputar kegiatan mapel Informatika — dari media sosial, video
+                    pembelajaran, sampai dokumentasi kelas.
+                  </p>
+                  <div className="swipe-hint">
+                    <span>Geser untuk lihat lainnya</span>
+                    <span className="arrow">→</span>
+                  </div>
+                  <SmoothGrid filterKey={`info-${infoAll.length}`} className="info-grid">
+                    {infoAll.map((item, idx) => {
+                      const jenis = item.Jenis || '';
+                      const visual = getInfoVisual(jenis);
+                      return (
+                        <SmoothCard
+                          key={`${item.Judul || 'info'}-${idx}`}
+                          index={idx}
+                          link={item.Link}
+                          className="info-card"
+                        >
+                          <MediaBox
+                            image={item.Image}
+                            gradClass={visual.gradClass}
+                            emoji={visual.emoji}
+                            badgeText={jenis.toUpperCase()}
+                            heightClass="media-h-130"
+                          />
+                          <div className="info-body">
+                            <h4>{item.Judul}</h4>
+                            <p>{item.Deskripsi}</p>
+                            <div className="meta">{item['Info Tambahan'] || ''}</div>
+                            {item.Link ? (
+                              <div className="card-access-btn access-amber">
+                                <span>Baca Info</span>
                                 <span className="card-access-arrow" aria-hidden="true">↗</span>
                               </div>
                             ) : null}
                           </div>
-                        </CardWrapper>
+                        </SmoothCard>
                       );
-                    })
-                  )}
-                </div>
-              </div>
-            </div>
-          </section>
+                    })}
+                  </SmoothGrid>
+                </SmoothSection>
+              </section>
 
-          <section id="cta">
-            <div className="cta-arch" aria-hidden="true" />
-            <div className="container reveal cta-inner">
-              <div className="cta-sun-badge">
-                <StarburstNode className="cta-sun" />
-              </div>
-              <h2>Punya pertanyaan seputar tugas atau materi?</h2>
-              <p>
-                Hubungi langsung guru ICT (Informatic and Communication Technology), Ayah Wahyu Dwi
-                Prasetyo, S.Kom.Gr, di ruang guru atau Lab ICT 1.
-              </p>
-              <a
-                href="https://wa.me/6285290699692"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn-primary"
-              >
-                Hubungi Teacher ICT →
-              </a>
-            </div>
-          </section>
-        </>
+              <section id="karya">
+                <SmoothSection className="container">
+                  <div className="eyebrow eyebrow-emerald">Ruang Karya</div>
+                  <h2 className="section-title">Karya siswa</h2>
+                  <p className="section-sub">
+                    Dokumentasi proyek, website, infografis, video, hingga proyek koding &amp; AI
+                    hasil karya siswa Attaufiq.
+                  </p>
+                  <SubjectSwitch
+                    value={currentMapelKarya}
+                    onChange={(v) => {
+                      setCurrentMapelKarya(v);
+                      setCurrentKaryaFilter('Semua');
+                    }}
+                  />
+                  <div className="karya-filter">
+                    {karyaCategories.map((cat) => (
+                      <button
+                        key={cat}
+                        type="button"
+                        className={`tab-btn${cat === activeKaryaFilter ? ' active' : ''}`}
+                        onClick={() => setCurrentKaryaFilter(cat)}
+                      >
+                        {cat}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="swipe-hint">
+                    <span>Geser untuk lihat lainnya</span>
+                    <span className="arrow">→</span>
+                  </div>
+                  <SmoothGrid
+                    filterKey={`karya-${currentMapelKarya}-${activeKaryaFilter}-${karyaItems.length}`}
+                    className="karya-grid"
+                  >
+                    {karyaItems.length === 0 ? (
+                      <motion.p
+                        className="grid-empty-msg"
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.35, ease: SILKY_EASE }}
+                      >
+                        Belum ada karya untuk kategori ini.
+                      </motion.p>
+                    ) : (
+                      karyaItems.map((k, i) => {
+                        const meta = KAT_META[k.Kategori || ''] || {
+                          gradClass: 'grad-default',
+                          emoji: '📁',
+                        };
+                        const heightClass = KARYA_HEIGHT_CLASSES[i % 3];
+                        return (
+                          <SmoothCard
+                            key={`${k.Judul || 'karya'}-${i}`}
+                            index={i}
+                            link={k.Link}
+                            className="karya-item"
+                          >
+                            <span className="karya-tag">{k.Kategori}</span>
+                            <MediaBox
+                              image={k.Image}
+                              gradClass={meta.gradClass}
+                              emoji={meta.emoji}
+                              heightClass={heightClass}
+                            />
+                            <div className="karya-info">
+                              <h4>{k.Judul}</h4>
+                              <p>
+                                {k.Pembuat ? `${k.Pembuat} · ` : ''}
+                                {k.Kelas}
+                              </p>
+                              {k.Link ? (
+                                <div className="card-access-btn access-emerald">
+                                  <span>Lihat Karya</span>
+                                  <span className="card-access-arrow" aria-hidden="true">↗</span>
+                                </div>
+                              ) : null}
+                            </div>
+                          </SmoothCard>
+                        );
+                      })
+                    )}
+                  </SmoothGrid>
+                </SmoothSection>
+              </section>
+
+              <section id="cta">
+                <div className="cta-arch" aria-hidden="true" />
+                <SmoothSection className="container cta-inner">
+                  <div className="cta-sun-badge">
+                    <StarburstNode className="cta-sun" />
+                  </div>
+                  <h2>Punya pertanyaan seputar tugas atau materi?</h2>
+                  <p>
+                    Hubungi langsung guru ICT (Informatic and Communication Technology), Ayah Wahyu
+                    Dwi Prasetyo, S.Kom.Gr, di ruang guru atau Lab ICT 1.
+                  </p>
+                  <a
+                    href="https://wa.me/6285290699692"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn-primary"
+                  >
+                    Hubungi Teacher ICT →
+                  </a>
+                </SmoothSection>
+              </section>
+            </>
       ) : activePage === 'materi' ? (
         <>
           <header className="subpage-hero">
@@ -922,7 +913,7 @@ export default function App() {
           </header>
 
           <section id="materi" className="subpage-body">
-            <div className="container reveal in">
+            <div className="container">
               <SubjectSwitch value={currentMapelMateri} onChange={setCurrentMapelMateri} />
               <div className="tabs">
                 {KELAS_LIST.map((kelas) => (
@@ -940,37 +931,44 @@ export default function App() {
                 <span>Geser untuk lihat lainnya</span>
                 <span className="arrow">→</span>
               </div>
-              <div className="hscroll-wrap">
-                <div className="materi-grid">
-                  {materiItems.length === 0 ? (
-                    <p className="grid-empty-msg">
-                      Belum ada materi untuk {currentMapelMateri} · {currentKelasMateri}.
-                    </p>
-                  ) : (
-                    materiItems.map((m, i) => (
-                      <CardWrapper
-                        key={`${m.Judul || 'materi'}-${i}`}
-                        link={m.Link}
-                        className={`materi-card card-accent-${(i % 4) + 1}`}
-                      >
-                        <CardMediaImage src={m.Image} />
-                        <div className="materi-num">
-                          {String(i + 1).padStart(2, '0')} · {m.Kelas}
+              <SmoothGrid
+                filterKey={`materi-${currentMapelMateri}-${currentKelasMateri}-${materiItems.length}`}
+                className="materi-grid"
+              >
+                {materiItems.length === 0 ? (
+                  <motion.p
+                    className="grid-empty-msg"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.35, ease: SILKY_EASE }}
+                  >
+                    Belum ada materi untuk {currentMapelMateri} · {currentKelasMateri}.
+                  </motion.p>
+                ) : (
+                  materiItems.map((m, i) => (
+                    <SmoothCard
+                      key={`${m.Judul || 'materi'}-${i}`}
+                      index={i}
+                      link={m.Link}
+                      className={`materi-card card-accent-${(i % 4) + 1}`}
+                    >
+                      <CardMediaImage src={m.Image} />
+                      <div className="materi-num">
+                        {String(i + 1).padStart(2, '0')} · {m.Kelas}
+                      </div>
+                      <h4>{m.Judul}</h4>
+                      <p>{m.Deskripsi}</p>
+                      <div className="materi-tag">{m.Tag || ''}</div>
+                      {m.Link ? (
+                        <div className="card-access-btn access-sky">
+                          <span>Buka Materi</span>
+                          <span className="card-access-arrow" aria-hidden="true">→</span>
                         </div>
-                        <h4>{m.Judul}</h4>
-                        <p>{m.Deskripsi}</p>
-                        <div className="materi-tag">{m.Tag || ''}</div>
-                        {m.Link ? (
-                          <div className="card-access-btn access-sky">
-                            <span>Buka Materi</span>
-                            <span className="card-access-arrow" aria-hidden="true">→</span>
-                          </div>
-                        ) : null}
-                      </CardWrapper>
-                    ))
-                  )}
-                </div>
-              </div>
+                      ) : null}
+                    </SmoothCard>
+                  ))
+                )}
+              </SmoothGrid>
             </div>
           </section>
         </>
@@ -1034,40 +1032,46 @@ export default function App() {
           </header>
 
           <section id="it-skills" className="subpage-body">
-            <div className="container reveal in">
+            <div className="container">
               <div className="swipe-hint">
                 <span>Geser untuk lihat lainnya</span>
                 <span className="arrow">→</span>
               </div>
-              <div className="hscroll-wrap">
-                <div className="materi-grid">
-                  {itSkillsItems.length === 0 ? (
-                    <p className="grid-empty-msg">Belum ada modul IT Skills yang tersedia.</p>
-                  ) : (
-                    itSkillsItems.map((s, i) => (
-                      <CardWrapper
-                        key={`${s.Judul || 'it-skill'}-${i}`}
-                        link={s.Link}
-                        className={`materi-card card-accent-${(i % 4) + 1}`}
-                      >
-                        <CardMediaImage src={s.Image} />
-                        <div className="materi-num">
-                          {String(i + 1).padStart(2, '0')} · IT Skills
+              <SmoothGrid filterKey={`it-skills-${itSkillsItems.length}`} className="materi-grid">
+                {itSkillsItems.length === 0 ? (
+                  <motion.p
+                    className="grid-empty-msg"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.35, ease: SILKY_EASE }}
+                  >
+                    Belum ada modul IT Skills yang tersedia.
+                  </motion.p>
+                ) : (
+                  itSkillsItems.map((s, i) => (
+                    <SmoothCard
+                      key={`${s.Judul || 'it-skill'}-${i}`}
+                      index={i}
+                      link={s.Link}
+                      className={`materi-card card-accent-${(i % 4) + 1}`}
+                    >
+                      <CardMediaImage src={s.Image} />
+                      <div className="materi-num">
+                        {String(i + 1).padStart(2, '0')} · IT Skills
+                      </div>
+                      <h4>{s.Judul}</h4>
+                      <p>{s.Deskripsi}</p>
+                      <div className="materi-tag">{s.Tag || ''}</div>
+                      {s.Link ? (
+                        <div className="card-access-btn access-indigo">
+                          <span>Buka IT Skills</span>
+                          <span className="card-access-arrow" aria-hidden="true">→</span>
                         </div>
-                        <h4>{s.Judul}</h4>
-                        <p>{s.Deskripsi}</p>
-                        <div className="materi-tag">{s.Tag || ''}</div>
-                        {s.Link ? (
-                          <div className="card-access-btn access-indigo">
-                            <span>Buka IT Skills</span>
-                            <span className="card-access-arrow" aria-hidden="true">→</span>
-                          </div>
-                        ) : null}
-                      </CardWrapper>
-                    ))
-                  )}
-                </div>
-              </div>
+                      ) : null}
+                    </SmoothCard>
+                  ))
+                )}
+              </SmoothGrid>
             </div>
           </section>
         </>
@@ -1131,7 +1135,7 @@ export default function App() {
           </header>
 
           <section id="tugas" className="subpage-body">
-            <div className="container reveal in">
+            <div className="container">
               <SubjectSwitch value={currentMapelTugas} onChange={setCurrentMapelTugas} />
               <div className="tabs">
                 {KELAS_LIST.map((kelas) => (
@@ -1149,50 +1153,57 @@ export default function App() {
                 <span>Geser untuk lihat lainnya</span>
                 <span className="arrow">→</span>
               </div>
-              <div className="hscroll-wrap">
-                <div className="materi-grid">
-                  {tugasItems.length === 0 ? (
-                    <p className="grid-empty-msg">
-                      Belum ada tugas/kuis untuk {currentMapelTugas} · {currentKelasTugas}.
-                    </p>
-                  ) : (
-                    tugasItems.map((t, i) => {
-                      const sKey = statusKey(t.Status);
-                      const jenisLabel = t.Jenis || 'Tugas';
-                      return (
-                        <CardWrapper
-                          key={`${t.Judul || 'tugas'}-${i}`}
-                          link={t.Link}
-                          className={`materi-card card-accent-${((i + 1) % 4) + 1}${sKey === 'done' ? ' tugas-done' : ''}`}
-                        >
-                          <CardMediaImage src={t.Image} />
-                          <div className="tugas-top-row">
-                            <div className="materi-num">
-                              {t.Kelas} · {t['Info Waktu'] || ''}
-                            </div>
-                            <div className="tugas-pills">
-                              <span
-                                className={`pill ${jenisLabel.toLowerCase() === 'kuis' ? 'kuis' : 'tugas'}`}
-                              >
-                                {jenisLabel}
-                              </span>
-                              <span className={`pill status-${sKey}`}>{STATUS_LABEL[sKey]}</span>
-                            </div>
+              <SmoothGrid
+                filterKey={`tugas-${currentMapelTugas}-${currentKelasTugas}-${tugasItems.length}`}
+                className="materi-grid"
+              >
+                {tugasItems.length === 0 ? (
+                  <motion.p
+                    className="grid-empty-msg"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.35, ease: SILKY_EASE }}
+                  >
+                    Belum ada tugas/kuis untuk {currentMapelTugas} · {currentKelasTugas}.
+                  </motion.p>
+                ) : (
+                  tugasItems.map((t, i) => {
+                    const sKey = statusKey(t.Status);
+                    const jenisLabel = t.Jenis || 'Tugas';
+                    return (
+                      <SmoothCard
+                        key={`${t.Judul || 'tugas'}-${i}`}
+                        index={i}
+                        link={t.Link}
+                        className={`materi-card card-accent-${((i + 1) % 4) + 1}${sKey === 'done' ? ' tugas-done' : ''}`}
+                      >
+                        <CardMediaImage src={t.Image} />
+                        <div className="tugas-top-row">
+                          <div className="materi-num">
+                            {t.Kelas} · {t['Info Waktu'] || ''}
                           </div>
-                          <h4>{t.Judul}</h4>
-                          <p>{t.Deskripsi}</p>
-                          {t.Link ? (
-                            <div className="card-access-btn access-navy">
-                              <span>{sKey === 'done' ? 'Lihat Detail' : 'Kerjakan Sekarang'}</span>
-                              <span className="card-access-arrow" aria-hidden="true">→</span>
-                            </div>
-                          ) : null}
-                        </CardWrapper>
-                      );
-                    })
-                  )}
-                </div>
-              </div>
+                          <div className="tugas-pills">
+                            <span
+                              className={`pill ${jenisLabel.toLowerCase() === 'kuis' ? 'kuis' : 'tugas'}`}
+                            >
+                              {jenisLabel}
+                            </span>
+                            <span className={`pill status-${sKey}`}>{STATUS_LABEL[sKey]}</span>
+                          </div>
+                        </div>
+                        <h4>{t.Judul}</h4>
+                        <p>{t.Deskripsi}</p>
+                        {t.Link ? (
+                          <div className="card-access-btn access-navy">
+                            <span>{sKey === 'done' ? 'Lihat Detail' : 'Kerjakan Sekarang'}</span>
+                            <span className="card-access-arrow" aria-hidden="true">→</span>
+                          </div>
+                        ) : null}
+                      </SmoothCard>
+                    );
+                  })
+                )}
+              </SmoothGrid>
             </div>
           </section>
         </>
@@ -1203,7 +1214,7 @@ export default function App() {
             <StarburstNode className="nilai-star-2" />
             <StarburstNode className="nilai-star-3" />
           </div>
-          <div className="container reveal in">
+          <div className="container">
             <div className="subpage-breadcrumb">
               <button
                 type="button"
@@ -1251,7 +1262,13 @@ export default function App() {
               </button>
             </div>
             <div className="nilai-wrap">
-              <form className="nilai-form" onSubmit={handleCekNilai}>
+              <motion.form
+                className="nilai-form"
+                onSubmit={handleCekNilai}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.45, delay: 0.08, ease: SILKY_EASE }}
+              >
                 <label htmlFor="nisnInput">NISN / Nomor Induk</label>
                 <input
                   id="nisnInput"
@@ -1273,71 +1290,129 @@ export default function App() {
                   Tampilkan Nilai →
                 </button>
                 <div className="nilai-hint">Masukkan NISN sesuai data sekolah</div>
-              </form>
+              </motion.form>
 
-              <div className="nilai-result" id="nilaiResult">
-                {nilaiRows === null ? (
-                  <div className="nilai-empty">
-                    <div className="icon">📊</div>
-                    <div>Rekap nilai akan muncul di sini setelah kamu mencari NISN.</div>
-                  </div>
-                ) : nilaiRows.length === 0 ? (
-                  <div className="nilai-empty">
-                    <div className="icon">⚠️</div>
-                    <div>
-                      Data untuk NISN {nilaiQuery?.nisn || '(kosong)'} pada mapel{' '}
-                      {nilaiQuery?.mapel} tidak ditemukan.
-                    </div>
-                  </div>
-                ) : (
-                  <>
-                    <div className="nilai-header">
+              <motion.div
+                className="nilai-result"
+                id="nilaiResult"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.45, delay: 0.14, ease: SILKY_EASE }}
+              >
+                <AnimatePresence mode="wait">
+                  {nilaiRows === null ? (
+                    <motion.div
+                      key="nilai-idle"
+                      className="nilai-empty"
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -6 }}
+                      transition={{ duration: 0.25, ease: SILKY_EASE }}
+                    >
+                      <div className="icon">📊</div>
+                      <div>Rekap nilai akan muncul di sini setelah kamu mencari NISN.</div>
+                    </motion.div>
+                  ) : nilaiRows.length === 0 ? (
+                    <motion.div
+                      key={`nilai-empty-${nilaiQuery?.nisn}-${nilaiQuery?.mapel}`}
+                      className="nilai-empty"
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -6 }}
+                      transition={{ duration: 0.25, ease: SILKY_EASE }}
+                    >
+                      <div className="icon">⚠️</div>
                       <div>
-                        <div className="nilai-student-name">{nilaiRows[0].Nama}</div>
-                        <div className="nilai-student-meta">
-                          {nilaiRows[0].Kelas} · NISN {nilaiQuery?.nisn} · {nilaiQuery?.mapel}
+                        Data untuk NISN {nilaiQuery?.nisn || '(kosong)'} pada mapel{' '}
+                        {nilaiQuery?.mapel} tidak ditemukan.
+                      </div>
+                    </motion.div>
+                  ) : (
+                    <motion.div
+                      key={`nilai-data-${nilaiQuery?.nisn}-${nilaiQuery?.mapel}`}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -6 }}
+                      transition={{ duration: 0.3, ease: SILKY_EASE }}
+                    >
+                      <div className="nilai-header">
+                        <div>
+                          <div className="nilai-student-name">{nilaiRows[0].Nama}</div>
+                          <div className="nilai-student-meta">
+                            {nilaiRows[0].Kelas} · NISN {nilaiQuery?.nisn} · {nilaiQuery?.mapel}
+                          </div>
                         </div>
+                        <motion.div
+                          className="nilai-avg-box"
+                          initial={{ opacity: 0, scale: 0.88 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          transition={{ duration: 0.38, delay: 0.12, ease: SILKY_EASE }}
+                        >
+                          <div className="nilai-avg-num">{nilaiAverage}</div>
+                          <div className="nilai-avg-label">Rata-rata</div>
+                        </motion.div>
                       </div>
-                      <div className="nilai-avg-box">
-                        <div className="nilai-avg-num">{nilaiAverage}</div>
-                        <div className="nilai-avg-label">Rata-rata</div>
-                      </div>
-                    </div>
-                    <table>
-                      <thead>
-                        <tr>
-                          <th>Komponen</th>
-                          <th>Skor</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {nilaiRows.map((n, idx) => {
-                          const skor = parseInt(n.Skor || '', 10) || 0;
-                          return (
-                            <tr key={`${n.Komponen || 'komponen'}-${idx}`}>
-                              <td>{n.Komponen}</td>
-                              <td className="nilai-score-col">
-                                <div className="nilai-score-wrap">
-                                  <span className="nilai-score-num">{skor}</span>
-                                  <progress
-                                    className="score-progress"
-                                    max={100}
-                                    value={Math.max(0, Math.min(100, skor))}
-                                  />
-                                </div>
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </>
-                )}
-              </div>
+                      <table>
+                        <thead>
+                          <tr>
+                            <th>Komponen</th>
+                            <th>Skor</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {nilaiRows.map((n, idx) => {
+                            const skor = parseInt(n.Skor || '', 10) || 0;
+                            const clamped = Math.max(0, Math.min(100, skor));
+                            return (
+                              <motion.tr
+                                key={`${n.Komponen || 'komponen'}-${idx}`}
+                                initial={{ opacity: 0, x: -10 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{
+                                  duration: 0.36,
+                                  delay: Math.min(idx * 0.055, 0.35),
+                                  ease: SILKY_EASE,
+                                }}
+                              >
+                                <td>{n.Komponen}</td>
+                                <td className="nilai-score-col">
+                                  <div className="nilai-score-wrap">
+                                    <span className="nilai-score-num">{skor}</span>
+                                    <div
+                                      className="score-progress-track"
+                                      role="progressbar"
+                                      aria-valuenow={clamped}
+                                      aria-valuemin={0}
+                                      aria-valuemax={100}
+                                    >
+                                      <motion.div
+                                        className="score-progress-fill"
+                                        initial={{ width: 0 }}
+                                        animate={{ width: `${clamped}%` }}
+                                        transition={{
+                                          duration: 0.65,
+                                          delay: 0.1 + Math.min(idx * 0.055, 0.35),
+                                          ease: SILKY_EASE,
+                                        }}
+                                      />
+                                    </div>
+                                  </div>
+                                </td>
+                              </motion.tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </motion.div>
             </div>
           </div>
         </section>
       )}
+        </motion.div>
+      </AnimatePresence>
 
       <footer className="attaufiq-footer">
         <div className={`footer-wave-wrap from-${activePage}`} aria-hidden="true">
@@ -1473,6 +1548,6 @@ export default function App() {
           </div>
         </div>
       </footer>
-    </>
+    </MotionConfig>
   );
 }

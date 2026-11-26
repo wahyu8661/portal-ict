@@ -10,6 +10,7 @@ interface MediaBoxProps {
 
 export function MediaBox({ image, gradClass, emoji, badgeText, heightClass }: MediaBoxProps) {
   const [imgFailed, setImgFailed] = useState(false);
+  const [imgLoaded, setImgLoaded] = useState(false);
   const showImage = Boolean(image) && !imgFailed;
 
   return (
@@ -19,6 +20,8 @@ export function MediaBox({ image, gradClass, emoji, badgeText, heightClass }: Me
           src={image}
           alt=""
           loading="lazy"
+          className={imgLoaded ? 'media-img-loaded' : 'media-img-loading'}
+          onLoad={() => setImgLoaded(true)}
           onError={() => setImgFailed(true)}
         />
       ) : (
@@ -33,14 +36,16 @@ export function MediaBox({ image, gradClass, emoji, badgeText, heightClass }: Me
 
 export function CardMediaImage({ src }: { src?: string }) {
   const [imgFailed, setImgFailed] = useState(false);
+  const [imgLoaded, setImgLoaded] = useState(false);
   if (!src || imgFailed) return null;
 
   return (
     <img
-      className="card-media"
+      className={`card-media ${imgLoaded ? 'media-img-loaded' : 'media-img-loading'}`}
       src={src}
       alt=""
       loading="lazy"
+      onLoad={() => setImgLoaded(true)}
       onError={() => setImgFailed(true)}
     />
   );
