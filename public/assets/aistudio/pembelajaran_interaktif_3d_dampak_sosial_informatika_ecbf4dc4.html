@@ -1,0 +1,2253 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dampak Sosial Informatika 3D — Pembelajaran, Games & Quiz</title>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Three.js untuk visualisasi 3D interaktif -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+  <!-- Tone.js untuk efek suara game & quiz (tanpa file audio eksternal) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+
+  <!-- Google Fonts: Plus Jakarta Sans & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Plus Jakarta Sans', 'sans-serif'],
+            display: ['Plus Jakarta Sans', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            navy: {
+              700: '#162E9E',
+              800: '#102380',
+              900: '#0B1A63',
+            },
+          },
+        },
+      },
+    };
+  </script>
+
+  <style>
+    /* Latar belakang Ivory Pearl & Sky Azure Attaufiq */
+    body {
+      background-color: #FBF6EA;
+      background-image:
+        radial-gradient(circle at 15% 15%, rgba(0, 161, 233, 0.14), transparent 36%),
+        radial-gradient(circle at 85% 20%, rgba(253, 208, 0, 0.16), transparent 36%),
+        radial-gradient(rgba(16, 35, 128, 0.14) 1.2px, transparent 1.2px);
+      background-size: 100% 100%, 100% 100%, 26px 26px;
+    }
+
+    /* Panggung Perspektif 3D */
+    .stage-3d {
+      perspective: 1600px;
+    }
+
+    .board-3d {
+      transform-style: preserve-3d;
+      transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+      will-change: transform;
+    }
+
+    /* Panel Kartu 3D Ekstrusi (Tema Attaufiq Navy + Ivory + Gold) */
+    .card-3d {
+      background: linear-gradient(180deg, #FFFFFF 0%, #FFFDF7 100%);
+      border: 2px solid rgba(16, 35, 128, 0.22);
+      box-shadow:
+        0 8px 0 #102380,
+        0 16px 28px rgba(11, 26, 99, 0.14),
+        inset 0 2px 0 rgba(255, 255, 255, 0.9);
+      transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.25s ease;
+    }
+
+    .card-3d:hover {
+      transform: translateY(-4px) translateZ(14px);
+      box-shadow:
+        0 12px 0 #0B1A63,
+        0 24px 36px rgba(11, 26, 99, 0.22),
+        inset 0 2px 0 rgba(255, 255, 255, 1);
+    }
+
+    /* Header Pill 3D Royal Navy */
+    .pill-header-3d {
+      background: linear-gradient(135deg, #0B1A63 0%, #102380 65%, #1731A8 100%);
+      box-shadow:
+        0 6px 0 #071247,
+        0 10px 18px rgba(11, 26, 99, 0.28),
+        inset 0 2px 2px rgba(255, 255, 255, 0.25);
+    }
+
+    /* Baris Item Pill 3D di dalam Mindmap */
+    .item-pill-3d {
+      background: linear-gradient(180deg, #FFFFFF 0%, #F5FAFF 100%);
+      border: 1.5px solid rgba(16, 35, 128, 0.16);
+      box-shadow: 0 3px 0 rgba(0, 161, 233, 0.24), 0 4px 8px rgba(16, 35, 128, 0.06);
+      transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+    }
+
+    .item-pill-3d:hover {
+      transform: translateY(-2px) scale(1.012);
+      border-color: #00A1E9;
+      box-shadow: 0 5px 0 rgba(0, 161, 233, 0.35), 0 8px 14px rgba(16, 35, 128, 0.14);
+    }
+
+    .item-pill-3d:active {
+      transform: translateY(1px);
+      box-shadow: 0 1px 0 rgba(0, 161, 233, 0.35);
+    }
+
+    /* Tombol 3D Bubble (Royal Navy, Attaufiq Gold, Emerald) */
+    .btn-3d-blue {
+      background: linear-gradient(135deg, #102380 0%, #1731A8 100%);
+      box-shadow: 0 5px 0 #0B1A63, 0 8px 16px rgba(16, 35, 128, 0.3);
+      transition: transform 0.14s ease, box-shadow 0.14s ease;
+    }
+    .btn-3d-blue:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 7px 0 #0B1A63, 0 12px 20px rgba(16, 35, 128, 0.35);
+    }
+    .btn-3d-blue:active {
+      transform: translateY(3px);
+      box-shadow: 0 2px 0 #0B1A63;
+    }
+
+    .btn-3d-amber {
+      background: linear-gradient(135deg, #FDD000 0%, #F1B23A 100%);
+      color: #0B1A63 !important;
+      box-shadow: 0 5px 0 #A87C2C, 0 8px 16px rgba(241, 178, 58, 0.32);
+      transition: transform 0.14s ease, box-shadow 0.14s ease;
+    }
+    .btn-3d-amber:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 7px 0 #A87C2C, 0 12px 20px rgba(241, 178, 58, 0.4);
+    }
+    .btn-3d-amber:active {
+      transform: translateY(3px);
+      box-shadow: 0 2px 0 #A87C2C;
+    }
+
+    .btn-3d-emerald {
+      background: linear-gradient(180deg, #10B981 0%, #059669 100%);
+      box-shadow: 0 5px 0 #065F46, 0 8px 16px rgba(5, 150, 105, 0.3);
+      transition: transform 0.14s ease, box-shadow 0.14s ease;
+    }
+    .btn-3d-emerald:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 7px 0 #065F46, 0 12px 20px rgba(5, 150, 105, 0.35);
+    }
+    .btn-3d-emerald:active {
+      transform: translateY(3px);
+      box-shadow: 0 2px 0 #065F46;
+    }
+
+    /* Awan Tengah 3D */
+    .cloud-3d {
+      background: linear-gradient(180deg, #FFFFFF 0%, #FBF6EA 100%);
+      border: 3.5px solid #102380;
+      box-shadow:
+        0 10px 0 #0B1A63,
+        0 20px 35px rgba(11, 26, 99, 0.22),
+        inset 0 4px 0 #FFFFFF;
+    }
+
+    /* Animasi Halus */
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fade-in {
+      animation: fadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    @keyframes highlightPulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.6); }
+      50% { box-shadow: 0 0 0 12px rgba(37, 99, 235, 0); }
+    }
+    .highlight-ring {
+      animation: highlightPulse 1.2s ease-in-out 2;
+      border-color: #2563eb !important;
+    }
+
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+  </style>
+</head>
+<body class="text-slate-800 font-sans min-h-screen flex flex-col overflow-x-hidden selection:bg-blue-200 selection:text-navy-900">
+
+  <!-- ================= HEADER / NAVBAR ================= -->
+  <header class="sticky top-0 z-50 bg-[#102380]/95 backdrop-blur-md border-b-2 border-[#FDD000]/30 shadow-md text-white">
+    <div class="max-w-7xl mx-auto px-3 sm:px-6 py-2.5 flex flex-wrap items-center justify-between gap-2.5">
+      <!-- Logo & Judul -->
+      <button onclick="navigateTo('mindmap')" class="flex items-center gap-3 text-left group focus:outline-none">
+        <div class="w-10 h-10 rounded-2xl bg-[#FDD000] text-[#0B1A63] flex items-center justify-center font-extrabold group-hover:scale-105 transition-transform shadow">
+          <i class="fa-solid fa-cubes text-lg"></i>
+        </div>
+        <div>
+          <span class="inline-block font-mono text-[10px] font-bold uppercase tracking-wider text-[#FDD000]">
+            Informatika · Kelas 12 · Kode DSI
+          </span>
+          <h1 class="font-display font-extrabold text-sm sm:text-base text-white leading-tight">
+            Dampak Sosial Informatika
+          </h1>
+        </div>
+      </button>
+
+      <!-- Navigasi Utama -->
+      <nav class="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5" aria-label="Navigasi Utama">
+        <button id="nav-mindmap" onclick="navigateTo('mindmap')" class="nav-btn px-3 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-1.5 transition-all whitespace-nowrap">
+          <i class="fa-solid fa-diagram-project"></i>
+          <span>Mindmap 3D</span>
+        </button>
+        <button id="nav-platform" onclick="navigateTo('platform')" class="nav-btn px-3 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-1.5 transition-all whitespace-nowrap">
+          <i class="fa-solid fa-users"></i>
+          <span class="hidden sm:inline">Platform</span>
+        </button>
+        <button id="nav-fitur" onclick="navigateTo('fitur')" class="nav-btn px-3 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-1.5 transition-all whitespace-nowrap">
+          <i class="fa-solid fa-gear"></i>
+          <span class="hidden sm:inline">Fitur</span>
+        </button>
+        <button id="nav-profesi" onclick="navigateTo('profesi')" class="nav-btn px-3 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-1.5 transition-all whitespace-nowrap">
+          <i class="fa-solid fa-briefcase"></i>
+          <span class="hidden sm:inline">Profesi</span>
+        </button>
+        <button id="nav-games" onclick="navigateTo('games')" class="nav-btn px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-1.5 transition-all whitespace-nowrap">
+          <i class="fa-solid fa-gamepad"></i>
+          <span>Games & Quiz</span>
+        </button>
+      </nav>
+
+      <!-- Kontrol Suara & Progres -->
+      <div class="flex items-center gap-2">
+        <button id="sound-toggle-btn" onclick="toggleSound()" title="Aktifkan/Matikan Efek Suara" class="w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20 border border-white/25 text-white flex items-center justify-center transition-all">
+          <i id="sound-icon" class="fa-solid fa-volume-high text-sm"></i>
+        </button>
+        <div class="hidden md:flex items-center gap-2 bg-white/10 px-3 py-1.5 rounded-xl border border-white/20">
+          <span id="progress-text" class="text-xs font-extrabold text-[#FDD000]">0/4</span>
+          <div class="w-14 h-2 bg-white/20 rounded-full overflow-hidden">
+            <div id="progress-bar" class="h-full bg-[#FDD000] rounded-full transition-all duration-500" style="width: 0%"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ================= KONTEN UTAMA ================= -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 py-5 sm:py-7">
+
+    <!-- ========================================================= -->
+    <!-- VIEW 1: MINDMAP 3D (VISUAL DASAR SESUAI PETA KONSEP)      -->
+    <!-- ========================================================= -->
+    <section id="view-mindmap" class="view-section animate-fade-in">
+      <!-- Orientasi Materi: Video Pemantik + CP & TP -->
+      <div class="card-3d rounded-3xl p-4 sm:p-5 mb-5">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div class="flex flex-wrap items-start gap-3">
+            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#102380] text-[#FDD000] font-mono text-[11px] font-bold uppercase tracking-wider shrink-0">
+              <i class="fa-solid fa-bullseye"></i> Orientasi Materi
+            </span>
+            <div>
+              <h2 class="font-display font-extrabold text-base sm:text-lg text-[#102380] leading-tight">
+                Video Pemantik, Capaian (CP) &amp; Tujuan Pembelajaran (TP)
+              </h2>
+              <p class="text-xs text-slate-600 mt-0.5">
+                Simak video pemantik dan pahami capaian kompetensi sebelum menjelajahi Mindmap 3D.
+              </p>
+            </div>
+          </div>
+          <button
+            id="btn-toggle-orientation"
+            type="button"
+            onclick="toggleOrientation()"
+            class="px-3 py-1.5 rounded-xl text-xs font-bold bg-[#FBF6EA] border border-[#102380]/20 text-[#102380] hover:bg-white transition-all flex items-center gap-1.5"
+          >
+            <span id="orientation-toggle-label">Sembunyikan</span>
+            <i id="orientation-toggle-icon" class="fa-solid fa-chevron-up text-[10px]"></i>
+          </button>
+        </div>
+
+        <div id="orientation-body" class="grid grid-cols-1 lg:grid-cols-12 gap-5 mt-4 pt-4 border-t border-[#102380]/10">
+          <!-- Kolom Kiri: Video Pemantik -->
+          <div class="lg:col-span-6 bg-[#FBF6EA] rounded-2xl p-4 border border-[#102380]/15 flex flex-col gap-3">
+            <div class="flex items-center justify-between gap-2 flex-wrap">
+              <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#FDD000]/30 text-[#875C00] font-mono text-[11px] font-bold uppercase">
+                <i class="fa-solid fa-play text-[10px]"></i> Video Pemantik
+              </span>
+              <a
+                href="https://www.youtube.com/watch?v=T8m3mlcXPiU"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white border border-[#102380]/15 text-xs font-bold text-[#102380] hover:border-[#00A1E9] transition-all"
+              >
+                <span>Tonton di YouTube</span>
+                <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+              </a>
+            </div>
+
+            <div class="relative w-full aspect-video rounded-2xl overflow-hidden border-2 border-[#102380] bg-[#0B1A63] shadow-md">
+              <iframe
+                src="https://www.youtube.com/embed/T8m3mlcXPiU?rel=0"
+                title="Video Pemantik: Dampak Sosial Informatika di Dunia Nyata"
+                class="absolute inset-0 w-full h-full border-0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowfullscreen
+                loading="lazy"
+              ></iframe>
+            </div>
+
+            <div>
+              <h3 class="font-display font-extrabold text-sm text-[#102380]">
+                Video Pemantik: Dampak Sosial Informatika di Dunia Nyata
+              </h3>
+              <p class="text-xs text-slate-600 mt-1 leading-relaxed">
+                Tonton video pengantar ini sebelum menjelajahi Mindmap 3D untuk mengamati bagaimana teknologi informasi mengubah interaksi sosial, ekonomi digital, dan peluang profesi.
+              </p>
+            </div>
+
+            <div class="bg-white rounded-xl p-3 border border-[#F1B23A]/40">
+              <div class="font-display font-extrabold text-xs text-[#102380] flex items-center gap-1.5 mb-1.5">
+                <i class="fa-solid fa-lightbulb text-amber-500"></i> Pertanyaan Pemantik Diskusi
+              </div>
+              <ul class="list-disc pl-4 space-y-1 text-[11px] text-slate-600">
+                <li>Perubahan nyata apa yang paling terasa dari pemanfaatan media sosial di lingkungan sekitarmu?</li>
+                <li>Bagaimana cara membedakan manfaat produktif dan risiko negatif (hoaks, privasi, kecanduan layar) saat menggunakan platform digital?</li>
+                <li>Profesi informatika apa saja yang berperan di balik layanan digital yang kamu pakai setiap hari?</li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- Kolom Kanan: CP & TP -->
+          <div class="lg:col-span-6 flex flex-col gap-3.5">
+            <div class="rounded-2xl p-4 bg-gradient-to-br from-[#0B1A63] via-[#102380] to-[#1731A8] text-white border-b-4 border-[#FDD000] shadow-md">
+              <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#FDD000]/20 text-[#FDD000] font-mono text-[10px] font-bold uppercase">
+                  <i class="fa-solid fa-book-open"></i> Capaian Pembelajaran (CP)
+                </span>
+                <span class="font-mono text-[11px] font-bold text-[#FBF6EA]/85">Fase F · SMA Kelas XII</span>
+              </div>
+              <div class="font-display font-extrabold text-sm mb-1">Elemen: Dampak Sosial Informatika (DSI)</div>
+              <p class="text-xs leading-relaxed text-[#FBF6EA]/90">
+                Peserta didik mampu memahami perkembangan dan pemanfaatan informatika secara lebih luas di dunia nyata, menganalisis dampak sosial, budaya, ekonomi, hukum, dan etika dari penggunaan media sosial beserta ekosistem digitalnya, serta mengenali ragam profesi, kompetensi, dan peluang karier di bidang teknologi informasi secara kritis dan bertanggung jawab.
+              </p>
+            </div>
+
+            <div class="space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="font-display font-extrabold text-xs sm:text-sm text-[#102380] flex items-center gap-1.5">
+                  <i class="fa-solid fa-circle-check text-emerald-600"></i> Tujuan Pembelajaran (TP)
+                </span>
+                <span class="font-mono text-[11px] font-bold text-[#0369A1] bg-[#00A1E9]/10 px-2.5 py-0.5 rounded-full">4 Target Kompetensi</span>
+              </div>
+
+              <button type="button" onclick="navigateTo('platform')" class="w-full text-left p-3 rounded-xl bg-white border border-[#102380]/15 hover:border-[#00A1E9] shadow-sm transition-all">
+                <div class="flex items-center justify-between gap-2 mb-0.5 flex-wrap">
+                  <div class="flex items-center gap-2">
+                    <span class="px-1.5 py-0.5 rounded bg-[#FDD000] text-[#0B1A63] font-mono text-[10px] font-extrabold">TP 1</span>
+                    <strong class="font-display text-xs text-[#102380]">Klasifikasi Platform Media Sosial</strong>
+                  </div>
+                  <span class="font-mono text-[10px] font-bold text-[#0369A1]">Cabang Platform →</span>
+                </div>
+                <p class="text-[11px] text-slate-600 leading-snug">Mengidentifikasi dan membedakan 5 jenis platform media sosial (Collaborative Projects, Content Communities, Blogs &amp; Microblogs, Social Networking Sites, Virtual Social Worlds) beserta contoh nyatanya.</p>
+              </button>
+
+              <button type="button" onclick="navigateTo('fitur')" class="w-full text-left p-3 rounded-xl bg-white border border-[#102380]/15 hover:border-[#00A1E9] shadow-sm transition-all">
+                <div class="flex items-center justify-between gap-2 mb-0.5 flex-wrap">
+                  <div class="flex items-center gap-2">
+                    <span class="px-1.5 py-0.5 rounded bg-[#FDD000] text-[#0B1A63] font-mono text-[10px] font-extrabold">TP 2</span>
+                    <strong class="font-display text-xs text-[#102380]">Analisis Fitur &amp; Dampak Nyata</strong>
+                  </div>
+                  <span class="font-mono text-[10px] font-bold text-[#0369A1]">Cabang Fitur →</span>
+                </div>
+                <p class="text-[11px] text-slate-600 leading-snug">Menganalisis peran 8 fitur media sosial (relasi, berbagi media, ulasan daring, forum, publikasi, bookmarking, minat, dan e-commerce) serta mengevaluasi manfaat dan risiko sosial-ekonominya.</p>
+              </button>
+
+              <button type="button" onclick="navigateTo('profesi')" class="w-full text-left p-3 rounded-xl bg-white border border-[#102380]/15 hover:border-[#00A1E9] shadow-sm transition-all">
+                <div class="flex items-center justify-between gap-2 mb-0.5 flex-wrap">
+                  <div class="flex items-center gap-2">
+                    <span class="px-1.5 py-0.5 rounded bg-[#FDD000] text-[#0B1A63] font-mono text-[10px] font-extrabold">TP 3</span>
+                    <strong class="font-display text-xs text-[#102380]">Pemetaan Profesi Bidang Informatika</strong>
+                  </div>
+                  <span class="font-mono text-[10px] font-bold text-[#0369A1]">Cabang Profesi TI →</span>
+                </div>
+                <p class="text-[11px] text-slate-600 leading-snug">Mengelompokkan tugas, wewenang, dan sertifikasi profesi TI pada bidang Perangkat Lunak (Software), Perangkat Keras (Hardware), dan Operasional Sistem Informasi.</p>
+              </button>
+
+              <button type="button" onclick="navigateTo('games')" class="w-full text-left p-3 rounded-xl bg-white border border-[#102380]/15 hover:border-[#00A1E9] shadow-sm transition-all">
+                <div class="flex items-center justify-between gap-2 mb-0.5 flex-wrap">
+                  <div class="flex items-center gap-2">
+                    <span class="px-1.5 py-0.5 rounded bg-[#FDD000] text-[#0B1A63] font-mono text-[10px] font-extrabold">TP 4</span>
+                    <strong class="font-display text-xs text-[#102380]">Etika Digital &amp; Evaluasi Pemahaman</strong>
+                  </div>
+                  <span class="font-mono text-[10px] font-bold text-[#0369A1]">Games &amp; Quiz →</span>
+                </div>
+                <p class="text-[11px] text-slate-600 leading-snug">Menunjukkan sikap literasi digital yang kritis, aman, dan produktif serta mengukur pemahaman melalui kuis, arcade sortir, pencocokan konsep, dan studi kasus esai.</p>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bar Kontrol Mode 3D -->
+      <div class="flex flex-wrap items-center justify-between gap-3 mb-5 bg-white/95 backdrop-blur-sm px-4 py-3 rounded-2xl border border-[#102380]/15 shadow-sm">
+        <div class="flex items-center gap-2.5 text-xs sm:text-sm text-navy-900 font-semibold">
+          <span>Klik poin mana saja pada Mindmap untuk membuka <strong>Infografis</strong> • Geser Laptop 3D di tengah untuk memutarnya!</span>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2">
+          <!-- Toggle Mode Tampilan Mindmap -->
+          <div class="inline-flex rounded-xl bg-blue-100 p-1 border border-blue-200">
+            <button id="btn-mode-board" onclick="setMindmapMode('board')" class="px-3 py-1.5 rounded-lg text-xs font-extrabold bg-blue-600 text-white shadow-sm transition-all">
+              <i class="fa-solid fa-layer-group mr-1"></i> Peta 3D
+            </button>
+            <button id="btn-mode-orbit" onclick="setMindmapMode('orbit')" class="px-3 py-1.5 rounded-lg text-xs font-extrabold text-navy-800 hover:bg-white/70 transition-all">
+              <i class="fa-solid fa-cube mr-1"></i> Dunia Orbit 3D
+            </button>
+          </div>
+
+          <button id="btn-tilt-toggle" onclick="toggle3DTilt()" class="px-3 py-1.5 rounded-xl text-xs font-bold bg-white border border-blue-300 text-navy-800 hover:bg-blue-50 transition-all">
+            <i class="fa-solid fa-arrows-up-down-left-right mr-1 text-blue-600"></i> Tilt 3D: <span id="tilt-status">ON</span>
+          </button>
+
+          <button onclick="navigateTo('games')" class="btn-3d-amber text-white px-4 py-1.5 rounded-xl text-xs font-extrabold flex items-center gap-1.5">
+            <i class="fa-solid fa-gamepad"></i> Main Games & Quiz
+          </button>
+        </div>
+      </div>
+
+      <!-- ===== MODE A: PETA KONSEP 3D (MENGIKUTI VISUAL DASAR GAMBAR) ===== -->
+      <div id="mindmap-board-wrapper" class="stage-3d">
+        <div id="mindmap-3d-board" class="board-3d relative">
+
+          <!-- Garis Penghubung SVG Biru Tebal (Desktop) -->
+          <svg class="hidden lg:block absolute inset-0 w-full h-full pointer-events-none z-0" viewBox="0 0 1200 760" preserveAspectRatio="none" aria-hidden="true">
+            <!-- Jalur dari Tengah ke Kiri (Jenis Platform) -->
+            <path d="M 480 310 C 435 310, 435 120, 390 120" fill="none" stroke="#14499b" stroke-width="7" stroke-linecap="round" />
+            <path d="M 480 390 C 435 390, 435 455, 390 455" fill="none" stroke="#14499b" stroke-width="5" stroke-linecap="round" opacity="0.65" />
+            <!-- Jalur dari Tengah ke Kanan (Jenis Fitur) -->
+            <path d="M 720 310 C 765 310, 765 120, 810 120" fill="none" stroke="#14499b" stroke-width="7" stroke-linecap="round" />
+            <path d="M 720 390 C 765 390, 765 455, 810 455" fill="none" stroke="#14499b" stroke-width="5" stroke-linecap="round" opacity="0.65" />
+            <!-- Jalur dari Tengah ke Bawah (Profesi) -->
+            <path d="M 600 425 L 600 505" fill="none" stroke="#14499b" stroke-width="8" stroke-linecap="round" />
+            <!-- Cabang Profesi ke 3 Kolom -->
+            <path d="M 410 535 C 240 535, 200 555, 200 595" fill="none" stroke="#14499b" stroke-width="7" stroke-linecap="round" />
+            <path d="M 600 555 L 600 595" fill="none" stroke="#14499b" stroke-width="7" stroke-linecap="round" />
+            <path d="M 790 535 C 960 535, 1000 555, 1000 595" fill="none" stroke="#14499b" stroke-width="7" stroke-linecap="round" />
+          </svg>
+
+          <!-- BARIS ATAS: KIRI (PLATFORM) + TENGAH (CLOUD & 3D LAPTOP) + KANAN (FITUR) -->
+          <div class="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-5 items-center mb-7">
+
+            <!-- ===== PANEL KIRI: JENIS PLATFORM MEDIA SOSIAL ===== -->
+            <div class="lg:col-span-4 order-2 lg:order-1">
+              <div class="card-3d rounded-[2rem] p-4 sm:p-5 relative">
+                <!-- Header Pill 3D dengan Ikon Users -->
+                <button onclick="navigateTo('platform')" class="w-full flex items-center gap-3 mb-4 group text-left focus:outline-none">
+                  <div class="w-14 h-14 rounded-full bg-white border-[3px] border-navy-800 shadow-md flex items-center justify-center text-navy-700 shrink-0 -mt-1 group-hover:scale-110 transition-transform">
+                    <i class="fa-solid fa-users text-2xl"></i>
+                  </div>
+                  <div class="pill-header-3d flex-1 rounded-full px-4 py-2.5 text-white flex items-center justify-between">
+                    <div>
+                      <h2 class="font-display font-extrabold text-sm sm:text-base leading-tight">Jenis Platform<br/>Media Sosial</h2>
+                    </div>
+                    <i class="fa-solid fa-arrow-up-right-from-square text-xs opacity-80 group-hover:translate-x-0.5 transition-transform"></i>
+                  </div>
+                </button>
+
+                <!-- Daftar 5 Platform (Klik langsung ke Infografis) -->
+                <div id="mindmap-platform-list" class="space-y-2.5"></div>
+              </div>
+            </div>
+
+            <!-- ===== PANEL TENGAH: LAPTOP 3D THREE.JS + AWAN JUDUL ===== -->
+            <div class="lg:col-span-4 order-1 lg:order-2 flex flex-col items-center justify-center py-2">
+              <!-- Kanvas Three.js 3D: Laptop + Globe + Wi-Fi + Chat + Like -->
+              <div class="relative w-full max-w-[330px] h-[230px] sm:h-[250px] -mb-8 z-20 cursor-grab active:cursor-grabbing" title="Geser untuk memutar objek 3D">
+                <canvas id="hero-3d-canvas"></canvas>
+                <span class="pointer-events-none absolute top-2 right-2 px-2.5 py-0.5 rounded-full bg-white/85 border border-blue-200 text-[10px] font-extrabold text-navy-700 shadow-sm">
+                  <i class="fa-solid fa-hand-pointer mr-1 text-blue-600"></i>Putar 3D
+                </span>
+              </div>
+
+              <!-- Awan 3D Judul Utama -->
+              <div class="cloud-3d relative z-10 w-full max-w-[330px] rounded-[2.6rem] px-6 pt-10 pb-6 text-center">
+                <div class="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-blue-100 text-navy-700 text-[10px] font-extrabold uppercase tracking-wider mb-1.5">
+                  <i class="fa-solid fa-globe"></i> Pusat Materi
+                </div>
+                <h2 class="font-display font-extrabold text-2xl sm:text-3xl text-navy-900 leading-tight tracking-tight">
+                  Dampak Sosial<br/>Informatika
+                </h2>
+                <div class="w-24 h-1.5 bg-gradient-to-r from-blue-500 to-navy-700 rounded-full mx-auto mt-3"></div>
+                <p class="text-[11px] text-slate-600 mt-2 font-medium">
+                  Jelajahi 3 cabang utama infografis & uji skormu di Zona Games!
+                </p>
+              </div>
+            </div>
+
+            <!-- ===== PANEL KANAN: JENIS FITUR MEDIA SOSIAL ===== -->
+            <div class="lg:col-span-4 order-3">
+              <div class="card-3d rounded-[2rem] p-4 sm:p-5 relative">
+                <!-- Header Pill 3D dengan Ikon Gear -->
+                <button onclick="navigateTo('fitur')" class="w-full flex items-center gap-3 mb-3.5 group text-left focus:outline-none">
+                  <div class="w-14 h-14 rounded-full bg-white border-[3px] border-navy-800 shadow-md flex items-center justify-center text-navy-700 shrink-0 -mt-1 group-hover:rotate-45 transition-transform duration-300">
+                    <i class="fa-solid fa-gear text-2xl"></i>
+                  </div>
+                  <div class="pill-header-3d flex-1 rounded-full px-4 py-2.5 text-white flex items-center justify-between">
+                    <div>
+                      <h2 class="font-display font-extrabold text-sm sm:text-base leading-tight">Jenis Fitur<br/>Media Sosial</h2>
+                    </div>
+                    <i class="fa-solid fa-arrow-up-right-from-square text-xs opacity-80 group-hover:translate-x-0.5 transition-transform"></i>
+                  </div>
+                </button>
+
+                <!-- Daftar 8 Fitur (Klik langsung ke Infografis) -->
+                <div id="mindmap-fitur-list" class="space-y-1.5"></div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- ===== BAGIAN BAWAH: PROFESI DI BIDANG INFORMATIKA ===== -->
+          <div class="relative z-10 mt-2">
+            <!-- Header Pill Tengah Profesi -->
+            <div class="flex justify-center mb-6">
+              <button onclick="navigateTo('profesi')" class="inline-flex items-center gap-3 group focus:outline-none">
+                <div class="w-14 h-14 rounded-full bg-white border-[3px] border-navy-800 shadow-md flex items-center justify-center text-navy-700 z-10 -mr-5 group-hover:scale-110 transition-transform">
+                  <i class="fa-solid fa-briefcase text-2xl"></i>
+                </div>
+                <div class="pill-header-3d rounded-full pl-8 pr-6 py-3 text-white flex items-center gap-3">
+                  <h2 class="font-display font-extrabold text-base sm:text-xl">Profesi di Bidang Informatika</h2>
+                  <i class="fa-solid fa-arrow-up-right-from-square text-xs opacity-85"></i>
+                </div>
+              </button>
+            </div>
+
+            <!-- 3 Kartu Kelompok Profesi (A, B, C) -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+              <!-- A. Kelompok Pertama: Software -->
+              <div onclick="navigateTo('profesi', 'prof-software')" role="button" tabindex="0" onkeydown="if(event.key==='Enter') navigateTo('profesi', 'prof-software')" class="card-3d cursor-pointer rounded-[1.8rem] overflow-hidden flex flex-col justify-between group">
+                <div>
+                  <div class="bg-gradient-to-b from-blue-100 to-blue-50 px-5 py-3.5 border-b border-blue-200 text-center">
+                    <h3 class="font-display font-extrabold text-sm sm:text-base text-navy-900">A. Kelompok Pertama</h3>
+                    <span class="text-xs font-bold text-blue-700">(Perangkat Lunak / Software)</span>
+                  </div>
+                  <div class="p-5">
+                    <p class="text-xs sm:text-sm text-slate-600 leading-relaxed mb-3">
+                      Bergelut di dunia perangkat lunak, seperti merancang sistem, mengembangkan aplikasi, dan mengelola data.
+                    </p>
+                    <div class="flex items-end justify-between gap-2">
+                      <div>
+                        <div class="text-xs font-extrabold text-navy-900 mb-1.5">Contoh Profesi:</div>
+                        <ul class="text-xs text-slate-700 space-y-1 font-medium">
+                          <li><i class="fa-solid fa-circle text-[6px] text-blue-600 mr-1.5 align-middle"></i>Sistem Analis</li>
+                          <li><i class="fa-solid fa-circle text-[6px] text-blue-600 mr-1.5 align-middle"></i>Programmer</li>
+                          <li><i class="fa-solid fa-circle text-[6px] text-blue-600 mr-1.5 align-middle"></i>Web Designer</li>
+                          <li><i class="fa-solid fa-circle text-[6px] text-blue-600 mr-1.5 align-middle"></i>Web Programmer</li>
+                        </ul>
+                      </div>
+                      <div class="w-16 h-16 rounded-2xl bg-blue-100 border-2 border-blue-300 flex items-center justify-center text-navy-700 shrink-0 group-hover:scale-110 transition-transform">
+                        <i class="fa-solid fa-laptop-code text-3xl"></i>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="px-5 py-2.5 bg-blue-50/80 border-t border-blue-100 text-xs font-extrabold text-blue-700 flex items-center justify-between">
+                  <span>Buka Infografis Software</span>
+                  <i class="fa-solid fa-arrow-right group-hover:translate-x-1 transition-transform"></i>
+                </div>
+              </div>
+
+              <!-- B. Kelompok Kedua: Hardware -->
+              <div onclick="navigateTo('profesi', 'prof-hardware')" role="button" tabindex="0" onkeydown="if(event.key==='Enter') navigateTo('profesi', 'prof-hardware')" class="card-3d cursor-pointer rounded-[1.8rem] overflow-hidden flex flex-col justify-between group">
+                <div>
+                  <div class="bg-gradient-to-b from-blue-100 to-blue-50 px-5 py-3.5 border-b border-blue-200 text-center">
+                    <h3 class="font-display font-extrabold text-sm sm:text-base text-navy-900">B. Kelompok Kedua</h3>
+                    <span class="text-xs font-bold text-blue-700">(Perangkat Keras / Hardware)</span>
+                  </div>
+                  <div class="p-5">
+                    <p class="text-xs sm:text-sm text-slate-600 leading-relaxed mb-3">
+                      Berkaitan dengan pemeliharaan, perbaikan perangkat keras komputer, dan teknis jaringan komputer.
+                    </p>
+                    <div class="flex items-end justify-between gap-2">
+                      <div>
+                        <div class="text-xs font-extrabold text-navy-900 mb-1.5">Contoh Profesi:</div>
+                        <ul class="text-xs text-slate-700 space-y-1 font-medium">
+                          <li><i class="fa-solid fa-circle text-[6px] text-blue-600 mr-1.5 align-middle"></i>Technical Engineer</li>
+                          <li><i class="fa-solid fa-circle text-[6px] text-blue-600 mr-1.5 align-middle"></i>Networking Engineer</li>
+                        </ul>
+                      </div>
+                      <div class="w-16 h-16 rounded-2xl bg-blue-100 border-2 border-blue-300 flex items-center justify-center text-navy-700 shrink-0 group-hover:scale-110 transition-transform">
+                        <i class="fa-solid fa-microchip text-3xl"></i>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="px-5 py-2.5 bg-blue-50/80 border-t border-blue-100 text-xs font-extrabold text-blue-700 flex items-center justify-between">
+                  <span>Buka Infografis Hardware</span>
+                  <i class="fa-solid fa-arrow-right group-hover:translate-x-1 transition-transform"></i>
+                </div>
+              </div>
+
+              <!-- C. Kelompok Ketiga: Operasional SI -->
+              <div onclick="navigateTo('profesi', 'prof-operasional')" role="button" tabindex="0" onkeydown="if(event.key==='Enter') navigateTo('profesi', 'prof-operasional')" class="card-3d cursor-pointer rounded-[1.8rem] overflow-hidden flex flex-col justify-between group">
+                <div>
+                  <div class="bg-gradient-to-b from-blue-100 to-blue-50 px-5 py-3.5 border-b border-blue-200 text-center">
+                    <h3 class="font-display font-extrabold text-sm sm:text-base text-navy-900">C. Kelompok Ketiga</h3>
+                    <span class="text-xs font-bold text-blue-700">(Operasional Sistem Informasi)</span>
+                  </div>
+                  <div class="p-5">
+                    <p class="text-xs sm:text-sm text-slate-600 leading-relaxed mb-3">
+                      Mengelola, mengadministrasikan, dan mengoperasikan sistem informasi dalam organisasi.
+                    </p>
+                    <div class="flex items-end justify-between gap-2">
+                      <div>
+                        <div class="text-xs font-extrabold text-navy-900 mb-1.5">Contoh Profesi:</div>
+                        <ul class="text-xs text-slate-700 space-y-1 font-medium">
+                          <li><i class="fa-solid fa-circle text-[6px] text-blue-600 mr-1.5 align-middle"></i>EDP Operator</li>
+                          <li><i class="fa-solid fa-circle text-[6px] text-blue-600 mr-1.5 align-middle"></i>System Administrator</li>
+                          <li><i class="fa-solid fa-circle text-[6px] text-blue-600 mr-1.5 align-middle"></i>MIS Director</li>
+                        </ul>
+                      </div>
+                      <div class="w-16 h-16 rounded-2xl bg-blue-100 border-2 border-blue-300 flex items-center justify-center text-navy-700 shrink-0 group-hover:scale-110 transition-transform">
+                        <i class="fa-solid fa-database text-3xl"></i>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="px-5 py-2.5 bg-blue-50/80 border-t border-blue-100 text-xs font-extrabold text-blue-700 flex items-center justify-between">
+                  <span>Buka Infografis Operasional SI</span>
+                  <i class="fa-solid fa-arrow-right group-hover:translate-x-1 transition-transform"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ===== MODE B: DUNIA ORBIT 3D PENUH (THREE.JS INTERAKTIF) ===== -->
+      <div id="mindmap-orbit-wrapper" class="hidden">
+        <div class="relative bg-gradient-to-b from-navy-900 via-navy-800 to-blue-900 rounded-[2rem] border-4 border-blue-400 shadow-2xl overflow-hidden h-[540px] sm:h-[600px]">
+          <canvas id="orbit-3d-canvas" class="cursor-grab active:cursor-grabbing"></canvas>
+
+          <!-- HUD Overlay Informasi Orbit 3D -->
+          <div class="pointer-events-none absolute top-4 left-4 right-4 flex flex-wrap items-start justify-between gap-3">
+            <div class="bg-navy-900/80 backdrop-blur-md border border-blue-400/40 text-white px-4 py-3 rounded-2xl max-w-sm">
+              <div class="text-[11px] font-bold uppercase tracking-wider text-blue-300 mb-0.5">
+                <i class="fa-solid fa-vr-cardboard mr-1"></i> Eksplorasi Mindmap 3D
+              </div>
+              <p class="text-xs text-blue-100">
+                Geser layar dengan mouse/jari untuk memutar kamera 360°. Klik node berwarna di dalam ruang 3D atau tombol cabang di bawah untuk membuka infografis!
+              </p>
+            </div>
+            <div id="orbit-hover-label" class="hidden bg-white text-navy-900 font-display font-extrabold text-xs sm:text-sm px-4 py-2 rounded-2xl shadow-lg border-2 border-blue-400"></div>
+          </div>
+
+          <!-- Tombol Akses Cepat Node 3D di Bawah Kanvas -->
+          <div class="absolute bottom-4 left-4 right-4 flex flex-wrap items-center justify-center gap-2.5">
+            <button onclick="navigateTo('platform')" class="btn-3d-blue text-white px-4 py-2 rounded-xl text-xs font-extrabold flex items-center gap-1.5">
+              <i class="fa-solid fa-users"></i> Jenis Platform (5)
+            </button>
+            <button onclick="navigateTo('fitur')" class="btn-3d-blue text-white px-4 py-2 rounded-xl text-xs font-extrabold flex items-center gap-1.5">
+              <i class="fa-solid fa-gear"></i> Jenis Fitur (8)
+            </button>
+            <button onclick="navigateTo('profesi')" class="btn-3d-emerald text-white px-4 py-2 rounded-xl text-xs font-extrabold flex items-center gap-1.5">
+              <i class="fa-solid fa-briefcase"></i> Profesi TI (3 Kelompok)
+            </button>
+            <button onclick="navigateTo('games')" class="btn-3d-amber text-white px-4 py-2 rounded-xl text-xs font-extrabold flex items-center gap-1.5">
+              <i class="fa-solid fa-gamepad"></i> Games & Quiz
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================================= -->
+    <!-- VIEW 2: INFOGRAFIS — JENIS PLATFORM MEDIA SOSIAL          -->
+    <!-- ========================================================= -->
+    <section id="view-platform" class="view-section hidden animate-fade-in">
+      <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
+        <button onclick="navigateTo('mindmap')" class="px-4 py-2.5 rounded-2xl bg-white border-2 border-blue-200 hover:border-blue-500 text-navy-800 text-sm font-bold shadow-sm transition-all flex items-center gap-2">
+          <i class="fa-solid fa-arrow-left"></i> Kembali ke Mindmap 3D
+        </button>
+        <button onclick="navigateTo('fitur')" class="btn-3d-blue text-white px-5 py-2.5 rounded-2xl text-sm font-bold flex items-center gap-2">
+          Lanjut: Jenis Fitur <i class="fa-solid fa-arrow-right"></i>
+        </button>
+      </div>
+
+      <div class="pill-header-3d rounded-[2rem] text-white p-6 sm:p-8 mb-7 relative overflow-hidden">
+        <div class="absolute -right-10 -top-10 w-48 h-48 rounded-full bg-white/10"></div>
+        <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-5">
+          <div>
+            <span class="inline-block px-3 py-1 rounded-full bg-white/20 text-xs font-bold uppercase tracking-wider mb-2">
+              <i class="fa-solid fa-users mr-1"></i> Infografis Cabang 1
+            </span>
+            <h2 class="font-display text-2xl sm:text-3xl font-extrabold">5 Jenis Platform Media Sosial</h2>
+            <p class="mt-2 text-blue-100 text-sm sm:text-base max-w-2xl">
+              Klasifikasi media sosial berdasarkan fungsi utama platform—mulai dari kolaborasi penyuntingan konten hingga interaksi avatar di dunia virtual 3D.
+            </p>
+          </div>
+          <div class="bg-white/15 backdrop-blur-md rounded-2xl px-5 py-3 text-center border border-white/25 shrink-0">
+            <div class="font-display text-3xl font-extrabold">05</div>
+            <div class="text-xs text-blue-100 font-semibold">Platform Utama</div>
+          </div>
+        </div>
+      </div>
+
+      <div id="infographic-platform-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+    </section>
+
+    <!-- ========================================================= -->
+    <!-- VIEW 3: INFOGRAFIS — JENIS FITUR MEDIA SOSIAL             -->
+    <!-- ========================================================= -->
+    <section id="view-fitur" class="view-section hidden animate-fade-in">
+      <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
+        <button onclick="navigateTo('mindmap')" class="px-4 py-2.5 rounded-2xl bg-white border-2 border-blue-200 hover:border-blue-500 text-navy-800 text-sm font-bold shadow-sm transition-all flex items-center gap-2">
+          <i class="fa-solid fa-arrow-left"></i> Kembali ke Mindmap 3D
+        </button>
+        <button onclick="navigateTo('profesi')" class="btn-3d-blue text-white px-5 py-2.5 rounded-2xl text-sm font-bold flex items-center gap-2">
+          Lanjut: Profesi TI <i class="fa-solid fa-arrow-right"></i>
+        </button>
+      </div>
+
+      <div class="pill-header-3d rounded-[2rem] text-white p-6 sm:p-8 mb-6 relative overflow-hidden">
+        <div class="absolute -right-8 -bottom-10 w-52 h-52 rounded-full bg-white/10"></div>
+        <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-5">
+          <div>
+            <span class="inline-block px-3 py-1 rounded-full bg-white/20 text-xs font-bold uppercase tracking-wider mb-2">
+              <i class="fa-solid fa-gear mr-1"></i> Infografis Cabang 2
+            </span>
+            <h2 class="font-display text-2xl sm:text-3xl font-extrabold">8 Jenis Fitur Media Sosial</h2>
+            <p class="mt-2 text-blue-100 text-sm sm:text-base max-w-2xl">
+              Setiap fitur memiliki peran sosial dan ekonomi yang berbeda dalam kehidupan digital masyarakat modern.
+            </p>
+          </div>
+          <div class="bg-white/15 backdrop-blur-md rounded-2xl px-5 py-3 text-center border border-white/25 shrink-0">
+            <div class="font-display text-3xl font-extrabold">08</div>
+            <div class="text-xs text-blue-100 font-semibold">Fitur Interaktif</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Filter Fitur -->
+      <div class="flex flex-wrap items-center gap-2 mb-6">
+        <button onclick="filterFeatures('all')" data-filter="all" class="feature-filter-btn px-4 py-2 rounded-xl text-xs font-extrabold bg-blue-600 text-white shadow-sm">Semua (8)</button>
+        <button onclick="filterFeatures('sosial')" data-filter="sosial" class="feature-filter-btn px-4 py-2 rounded-xl text-xs font-extrabold bg-white text-navy-800 border border-blue-200 hover:bg-blue-50">Relasi & Komunitas</button>
+        <button onclick="filterFeatures('konten')" data-filter="konten" class="feature-filter-btn px-4 py-2 rounded-xl text-xs font-extrabold bg-white text-navy-800 border border-blue-200 hover:bg-blue-50">Konten & Kurasi</button>
+        <button onclick="filterFeatures('ekonomi')" data-filter="ekonomi" class="feature-filter-btn px-4 py-2 rounded-xl text-xs font-extrabold bg-white text-navy-800 border border-blue-200 hover:bg-blue-50">Ulasan & Ekonomi</button>
+      </div>
+
+      <div id="infographic-fitur-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5"></div>
+    </section>
+
+    <!-- ========================================================= -->
+    <!-- VIEW 4: INFOGRAFIS — PROFESI DI BIDANG INFORMATIKA        -->
+    <!-- ========================================================= -->
+    <section id="view-profesi" class="view-section hidden animate-fade-in">
+      <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
+        <button onclick="navigateTo('mindmap')" class="px-4 py-2.5 rounded-2xl bg-white border-2 border-blue-200 hover:border-blue-500 text-navy-800 text-sm font-bold shadow-sm transition-all flex items-center gap-2">
+          <i class="fa-solid fa-arrow-left"></i> Kembali ke Mindmap 3D
+        </button>
+        <button onclick="navigateTo('games')" class="btn-3d-amber text-white px-5 py-2.5 rounded-2xl text-sm font-bold flex items-center gap-2">
+          Lanjut: Games & Quiz <i class="fa-solid fa-gamepad"></i>
+        </button>
+      </div>
+
+      <div class="pill-header-3d rounded-[2rem] text-white p-6 sm:p-8 mb-7 relative overflow-hidden">
+        <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-5">
+          <div>
+            <span class="inline-block px-3 py-1 rounded-full bg-white/20 text-xs font-bold uppercase tracking-wider mb-2">
+              <i class="fa-solid fa-briefcase mr-1"></i> Infografis Cabang 3
+            </span>
+            <h2 class="font-display text-2xl sm:text-3xl font-extrabold">Profesi di Bidang Informatika</h2>
+            <p class="mt-2 text-blue-100 text-sm sm:text-base max-w-2xl">
+              Terbagi dalam 3 kelompok besar: Perangkat Lunak (Software), Perangkat Keras (Hardware), dan Operasional Sistem Informasi.
+            </p>
+          </div>
+          <div class="flex gap-3 shrink-0">
+            <div class="bg-white/15 rounded-2xl px-4 py-3 text-center border border-white/25">
+              <div class="font-display text-2xl font-extrabold">03</div>
+              <div class="text-[11px] text-blue-100">Kelompok</div>
+            </div>
+            <div class="bg-white/15 rounded-2xl px-4 py-3 text-center border border-white/25">
+              <div class="font-display text-2xl font-extrabold">09</div>
+              <div class="text-[11px] text-blue-100">Profesi</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- A. Software -->
+      <div id="prof-software" class="card-3d rounded-[2rem] p-6 mb-7">
+        <div class="flex items-center gap-3.5 mb-5">
+          <div class="w-12 h-12 rounded-2xl pill-header-3d text-white flex items-center justify-center shrink-0">
+            <i class="fa-solid fa-laptop-code text-xl"></i>
+          </div>
+          <div>
+            <span class="text-xs font-extrabold uppercase tracking-wider text-blue-600">A. Kelompok Pertama</span>
+            <h3 class="font-display text-xl font-extrabold text-navy-900">Perangkat Lunak (Software)</h3>
+          </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div class="rounded-2xl bg-blue-50/80 border border-blue-200 p-4 space-y-3">
+            <div class="text-xs font-extrabold uppercase text-navy-700"><i class="fa-solid fa-diagram-next mr-1"></i> Alur Sistem & Aplikasi</div>
+            <div class="bg-white rounded-xl p-4 border border-blue-200 shadow-sm">
+              <h4 class="font-display font-bold text-navy-900 mb-1">1. Sistem Analis</h4>
+              <p class="text-xs sm:text-sm text-slate-600">Menganalisa sistem yang akan diimplementasikan, kelebihan & kekurangannya, studi kelayakan, hingga desain sistem.</p>
+            </div>
+            <div class="text-center text-blue-500"><i class="fa-solid fa-arrow-down"></i></div>
+            <div class="bg-white rounded-xl p-4 border border-blue-200 shadow-sm">
+              <h4 class="font-display font-bold text-navy-900 mb-1">2. Programmer</h4>
+              <p class="text-xs sm:text-sm text-slate-600">Mengimplementasikan rancangan sistem analis menjadi program nyata (aplikasi maupun sistem operasi).</p>
+            </div>
+          </div>
+          <div class="rounded-2xl bg-sky-50/80 border border-sky-200 p-4 space-y-3">
+            <div class="text-xs font-extrabold uppercase text-sky-800"><i class="fa-solid fa-globe mr-1"></i> Alur Aplikasi Web</div>
+            <div class="bg-white rounded-xl p-4 border border-sky-200 shadow-sm">
+              <h4 class="font-display font-bold text-navy-900 mb-1">3. Web Designer</h4>
+              <p class="text-xs sm:text-sm text-slate-600">Melakukan perencanaan, studi kelayakan, analisis, dan desain tampilan/struktur proyek aplikasi berbasis web.</p>
+            </div>
+            <div class="text-center text-sky-500"><i class="fa-solid fa-arrow-down"></i></div>
+            <div class="bg-white rounded-xl p-4 border border-sky-200 shadow-sm">
+              <h4 class="font-display font-bold text-navy-900 mb-1">4. Web Programmer</h4>
+              <p class="text-xs sm:text-sm text-slate-600">Mengimplementasikan rancangan web designer menjadi program berbasis web yang fungsional.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- B. Hardware & C. Operasional -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div id="prof-hardware" class="lg:col-span-5 card-3d rounded-[2rem] p-6">
+          <div class="flex items-center gap-3.5 mb-5">
+            <div class="w-12 h-12 rounded-2xl pill-header-3d text-white flex items-center justify-center shrink-0">
+              <i class="fa-solid fa-microchip text-xl"></i>
+            </div>
+            <div>
+              <span class="text-xs font-extrabold uppercase tracking-wider text-blue-600">B. Kelompok Kedua</span>
+              <h3 class="font-display text-lg font-extrabold text-navy-900">Perangkat Keras (Hardware)</h3>
+            </div>
+          </div>
+          <div class="space-y-4">
+            <div class="p-4 rounded-2xl bg-blue-50 border border-blue-200">
+              <h4 class="font-display font-bold text-navy-900 mb-1"><i class="fa-solid fa-screwdriver-wrench text-blue-600 mr-1.5"></i>Technical Engineer (Teknisi)</h4>
+              <p class="text-xs sm:text-sm text-slate-600">Berkecimpung dalam bidang teknik pemeliharaan maupun perbaikan perangkat keras komputer.</p>
+            </div>
+            <div class="p-4 rounded-2xl bg-blue-50 border border-blue-200">
+              <h4 class="font-display font-bold text-navy-900 mb-1"><i class="fa-solid fa-network-wired text-blue-600 mr-1.5"></i>Networking Engineer</h4>
+              <p class="text-xs sm:text-sm text-slate-600">Menangani bidang teknis jaringan komputer mulai dari maintenance hingga troubleshooting.</p>
+            </div>
+          </div>
+        </div>
+
+        <div id="prof-operasional" class="lg:col-span-7 card-3d rounded-[2rem] p-6">
+          <div class="flex items-center gap-3.5 mb-5">
+            <div class="w-12 h-12 rounded-2xl pill-header-3d text-white flex items-center justify-center shrink-0">
+              <i class="fa-solid fa-database text-xl"></i>
+            </div>
+            <div>
+              <span class="text-xs font-extrabold uppercase tracking-wider text-blue-600">C. Kelompok Ketiga</span>
+              <h3 class="font-display text-lg font-extrabold text-navy-900">Operasional Sistem Informasi</h3>
+            </div>
+          </div>
+          <div class="space-y-3">
+            <div class="p-4 rounded-2xl pill-header-3d text-white">
+              <div class="flex items-center justify-between mb-1">
+                <h4 class="font-display font-bold"><i class="fa-solid fa-crown text-amber-300 mr-1.5"></i>MIS Director</h4>
+                <span class="text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full bg-white/20">Wewenang Tertinggi</span>
+              </div>
+              <p class="text-xs sm:text-sm text-blue-100">Memiliki wewenang tertinggi terhadap sistem informasi; memanajemen hardware, software, dan SDM secara keseluruhan.</p>
+            </div>
+            <div class="sm:mx-3 p-4 rounded-2xl bg-blue-50 border-2 border-blue-300">
+              <h4 class="font-display font-bold text-navy-900 mb-1"><i class="fa-solid fa-shield-halved text-blue-600 mr-1.5"></i>System Administrator</h4>
+              <p class="text-xs sm:text-sm text-slate-600">Melakukan administrasi & pemeliharaan sistem, serta mengatur hak akses operasional sistem.</p>
+            </div>
+            <div class="sm:mx-6 p-4 rounded-2xl bg-white border border-blue-200">
+              <h4 class="font-display font-bold text-navy-900 mb-1"><i class="fa-solid fa-keyboard text-blue-600 mr-1.5"></i>EDP Operator</h4>
+              <p class="text-xs sm:text-sm text-slate-600">Mengoperasikan program-program yang berhubungan dengan Electronic Data Processing (EDP) di organisasi.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================================= -->
+    <!-- VIEW 5: ZONA GAMES & QUIZ INTERAKTIF                      -->
+    <!-- ========================================================= -->
+    <section id="view-games" class="view-section hidden animate-fade-in">
+      <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
+        <button onclick="navigateTo('mindmap')" class="px-4 py-2.5 rounded-2xl bg-white border-2 border-blue-200 hover:border-blue-500 text-navy-800 text-sm font-bold shadow-sm transition-all flex items-center gap-2">
+          <i class="fa-solid fa-arrow-left"></i> Kembali ke Mindmap 3D
+        </button>
+      </div>
+
+      <!-- Banner Games & Quiz -->
+      <div class="pill-header-3d rounded-[2rem] text-white p-6 sm:p-7 mb-6 relative overflow-hidden">
+        <div class="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <span class="inline-block px-3 py-1 rounded-full bg-amber-400 text-navy-900 text-xs font-extrabold uppercase tracking-wider mb-2">
+              <i class="fa-solid fa-trophy mr-1"></i> Arena Tantangan
+            </span>
+            <h2 class="font-display text-2xl sm:text-3xl font-extrabold">Games & Quiz Informatika</h2>
+            <p class="mt-1.5 text-blue-100 text-sm max-w-xl">
+              Asah penguasaan materimu lewat Quiz Pilihan Ganda, Game Arcade Sortir Cepat, Game Mencocokkan Modul, dan Latihan Essay!
+            </p>
+          </div>
+          <div class="bg-white/15 backdrop-blur-md rounded-2xl px-5 py-3 border border-white/25 text-center shrink-0">
+            <div class="text-[11px] uppercase tracking-wider text-blue-100 font-bold">Rekor Sortir Cepat</div>
+            <div id="arcade-best-score" class="font-display text-2xl font-extrabold text-amber-300">0</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab Pemilih Game / Quiz -->
+      <div class="flex flex-wrap gap-2.5 mb-6">
+        <button onclick="switchGameTab('quiz')" id="gtab-quiz" class="gtab-btn px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-extrabold transition-all">
+          <i class="fa-solid fa-circle-question mr-1.5"></i> Quiz Pilihan Ganda (10 Soal)
+        </button>
+        <button onclick="switchGameTab('arcade')" id="gtab-arcade" class="gtab-btn px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-extrabold transition-all">
+          <i class="fa-solid fa-bolt mr-1.5"></i> Game: Sortir Cepat 3D
+        </button>
+        <button onclick="switchGameTab('match')" id="gtab-match" class="gtab-btn px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-extrabold transition-all">
+          <i class="fa-solid fa-link mr-1.5"></i> Game: Cocokkan (Aktivitas 2)
+        </button>
+        <button onclick="switchGameTab('essay')" id="gtab-essay" class="gtab-btn px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-extrabold transition-all">
+          <i class="fa-solid fa-pen-to-square mr-1.5"></i> Latihan Essay (Aktivitas 1 & 3)
+        </button>
+      </div>
+
+      <!-- ===== TAB 1: QUIZ PILIHAN GANDA INTERAKTIF ===== -->
+      <div id="gpanel-quiz" class="gpanel card-3d rounded-[2rem] p-5 sm:p-8">
+        <!-- Header Status Quiz -->
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-5 pb-4 border-b border-blue-100">
+          <div class="flex items-center gap-3">
+            <span id="quiz-counter" class="px-3.5 py-1.5 rounded-xl bg-blue-100 text-navy-800 text-xs sm:text-sm font-extrabold">Soal 1 / 10</span>
+            <span id="quiz-streak" class="px-3 py-1.5 rounded-xl bg-amber-100 text-amber-800 text-xs font-extrabold hidden">
+              <i class="fa-solid fa-fire mr-1 text-orange-500"></i>Streak x<span id="quiz-streak-num">0</span>
+            </span>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="text-sm font-extrabold text-navy-900">Skor: <span id="quiz-score" class="text-blue-600">0</span></span>
+            <button onclick="startQuiz()" class="px-3 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-navy-700 text-xs font-bold border border-blue-200">
+              <i class="fa-solid fa-rotate-right mr-1"></i> Ulangi
+            </button>
+          </div>
+        </div>
+
+        <!-- Bar Progres Quiz -->
+        <div class="w-full h-2.5 bg-blue-100 rounded-full overflow-hidden mb-6">
+          <div id="quiz-progress-bar" class="h-full bg-gradient-to-r from-blue-500 to-navy-700 transition-all duration-300" style="width: 10%"></div>
+        </div>
+
+        <!-- Area Soal -->
+        <div id="quiz-play-area">
+          <span id="quiz-category-tag" class="inline-block px-3 py-1 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-[11px] font-extrabold uppercase tracking-wider mb-3">Kategori</span>
+          <h3 id="quiz-question-text" class="font-display text-lg sm:text-xl font-extrabold text-navy-900 leading-snug mb-5"></h3>
+
+          <div id="quiz-options" class="grid grid-cols-1 sm:grid-cols-2 gap-3.5 mb-5"></div>
+
+          <!-- Penjelasan Jawaban -->
+          <div id="quiz-explanation" class="hidden p-4 rounded-2xl border-2 mb-5 text-sm leading-relaxed"></div>
+
+          <div class="flex justify-end">
+            <button id="quiz-next-btn" onclick="nextQuizQuestion()" class="hidden btn-3d-blue text-white px-6 py-3 rounded-2xl text-sm font-extrabold flex items-center gap-2">
+              <span>Soal Berikutnya</span> <i class="fa-solid fa-arrow-right"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Area Hasil Akhir Quiz -->
+        <div id="quiz-result-area" class="hidden text-center py-6">
+          <div id="quiz-medal-icon" class="w-20 h-20 mx-auto rounded-3xl pill-header-3d text-amber-300 flex items-center justify-center text-4xl mb-4">
+            <i class="fa-solid fa-award"></i>
+          </div>
+          <h3 class="font-display text-2xl sm:text-3xl font-extrabold text-navy-900">Quiz Selesai!</h3>
+          <p id="quiz-result-msg" class="text-slate-600 text-sm sm:text-base mt-1 mb-5"></p>
+          <div class="inline-flex items-center gap-6 bg-blue-50 border-2 border-blue-200 rounded-2xl px-6 py-4 mb-6">
+            <div>
+              <div class="text-xs font-bold text-slate-500">Benar</div>
+              <div id="quiz-final-correct" class="font-display text-2xl font-extrabold text-emerald-600">0/10</div>
+            </div>
+            <div class="w-px h-10 bg-blue-200"></div>
+            <div>
+              <div class="text-xs font-bold text-slate-500">Total Skor</div>
+              <div id="quiz-final-score" class="font-display text-2xl font-extrabold text-blue-700">0</div>
+            </div>
+          </div>
+          <div>
+            <button onclick="startQuiz()" class="btn-3d-blue text-white px-7 py-3 rounded-2xl text-sm font-extrabold">
+              <i class="fa-solid fa-rotate-right mr-1.5"></i> Main Quiz Lagi
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== TAB 2: GAME ARCADE "SORTIR CEPAT 3D" ===== -->
+      <div id="gpanel-arcade" class="gpanel hidden card-3d rounded-[2rem] p-5 sm:p-8">
+        <!-- Layar Pembuka Game -->
+        <div id="arcade-intro" class="text-center py-6 max-w-xl mx-auto">
+          <div class="w-20 h-20 mx-auto rounded-3xl btn-3d-amber text-white flex items-center justify-center text-3xl mb-4">
+            <i class="fa-solid fa-bolt"></i>
+          </div>
+          <h3 class="font-display text-2xl sm:text-3xl font-extrabold text-navy-900">Game: Sortir Cepat Informatika!</h3>
+          <p class="text-sm text-slate-600 mt-2 mb-6 leading-relaxed">
+            Sebuah kartu contoh atau istilah akan muncul di tengah. Tugasmu adalah <strong>memilih kategori yang tepat secepat mungkin</strong> dalam waktu <strong>45 detik</strong>! Dapatkan bonus kombo untuk setiap jawaban beruntun!
+          </p>
+          <button onclick="startArcadeGame()" class="btn-3d-emerald text-white px-8 py-3.5 rounded-2xl text-base font-extrabold">
+            <i class="fa-solid fa-play mr-2"></i> Mulai Bermain!
+          </button>
+        </div>
+
+        <!-- Area Bermain -->
+        <div id="arcade-play" class="hidden">
+          <!-- HUD Game -->
+          <div class="flex flex-wrap items-center justify-between gap-3 mb-6 bg-blue-50 border-2 border-blue-200 rounded-2xl px-4 py-3">
+            <div class="flex items-center gap-4">
+              <div class="text-sm font-extrabold text-navy-900">
+                <i class="fa-solid fa-clock text-blue-600 mr-1"></i> <span id="arcade-timer">45</span>s
+              </div>
+              <div id="arcade-lives" class="text-rose-500 text-base tracking-widest">
+                <i class="fa-solid fa-heart"></i><i class="fa-solid fa-heart"></i><i class="fa-solid fa-heart"></i>
+              </div>
+            </div>
+            <div class="flex items-center gap-3">
+              <span id="arcade-combo-badge" class="hidden px-2.5 py-1 rounded-xl bg-amber-100 text-amber-800 text-xs font-extrabold">Kombo x2</span>
+              <div class="text-sm font-extrabold text-navy-900">Skor: <span id="arcade-score" class="text-blue-600 text-lg">0</span></div>
+            </div>
+          </div>
+
+          <!-- Kartu Target 3D -->
+          <div class="max-w-md mx-auto mb-6">
+            <div id="arcade-card" class="pill-header-3d rounded-3xl p-6 sm:p-8 text-center text-white transition-transform duration-200">
+              <div class="text-[11px] uppercase tracking-widest text-blue-200 font-bold mb-2">Masukkan ke Kategori Mana?</div>
+              <div id="arcade-item-name" class="font-display text-2xl sm:text-3xl font-extrabold mb-2">Wikipedia</div>
+              <div id="arcade-item-clue" class="text-xs sm:text-sm text-blue-100">Contoh / Istilah Informatika</div>
+            </div>
+            <div id="arcade-feedback" class="h-7 mt-2 text-center text-sm font-extrabold"></div>
+          </div>
+
+          <!-- 5 Tombol Kategori Sortir -->
+          <div class="grid grid-cols-2 sm:grid-cols-5 gap-3">
+            <button onclick="submitArcadeAnswer('platform')" class="btn-3d-blue text-white p-3.5 rounded-2xl text-xs sm:text-sm font-extrabold flex flex-col items-center gap-1.5">
+              <i class="fa-solid fa-users text-lg"></i>
+              <span>Platform Medsos</span>
+            </button>
+            <button onclick="submitArcadeAnswer('fitur')" class="btn-3d-blue text-white p-3.5 rounded-2xl text-xs sm:text-sm font-extrabold flex flex-col items-center gap-1.5">
+              <i class="fa-solid fa-gear text-lg"></i>
+              <span>Fitur Medsos</span>
+            </button>
+            <button onclick="submitArcadeAnswer('software')" class="btn-3d-emerald text-white p-3.5 rounded-2xl text-xs sm:text-sm font-extrabold flex flex-col items-center gap-1.5">
+              <i class="fa-solid fa-laptop-code text-lg"></i>
+              <span>Profesi Software</span>
+            </button>
+            <button onclick="submitArcadeAnswer('hardware')" class="btn-3d-amber text-white p-3.5 rounded-2xl text-xs sm:text-sm font-extrabold flex flex-col items-center gap-1.5">
+              <i class="fa-solid fa-microchip text-lg"></i>
+              <span>Profesi Hardware</span>
+            </button>
+            <button onclick="submitArcadeAnswer('operasional')" class="col-span-2 sm:col-span-1 btn-3d-emerald text-white p-3.5 rounded-2xl text-xs sm:text-sm font-extrabold flex flex-col items-center gap-1.5">
+              <i class="fa-solid fa-database text-lg"></i>
+              <span>Operasional SI</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Layar Game Over -->
+        <div id="arcade-gameover" class="hidden text-center py-6">
+          <div class="w-20 h-20 mx-auto rounded-3xl pill-header-3d text-amber-300 flex items-center justify-center text-4xl mb-4">
+            <i class="fa-solid fa-trophy"></i>
+          </div>
+          <h3 id="arcade-over-title" class="font-display text-2xl sm:text-3xl font-extrabold text-navy-900">Waktu Habis!</h3>
+          <p class="text-slate-600 text-sm mt-1 mb-5">Skor akhirmu di Game Sortir Cepat:</p>
+          <div id="arcade-final-score" class="font-display text-5xl font-extrabold text-blue-600 mb-6">0</div>
+          <button onclick="startArcadeGame()" class="btn-3d-emerald text-white px-8 py-3 rounded-2xl text-sm font-extrabold">
+            <i class="fa-solid fa-rotate-right mr-1.5"></i> Main Lagi
+          </button>
+        </div>
+      </div>
+
+      <!-- ===== TAB 3: GAME MENCOCOKKAN (AKTIVITAS 2 MODUL) ===== -->
+      <div id="gpanel-match" class="gpanel hidden card-3d rounded-[2rem] p-5 sm:p-7">
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-5 pb-4 border-b border-blue-100">
+          <div>
+            <h3 class="font-display font-extrabold text-lg text-navy-900">Cocokkan Kolom A dan Kolom B</h3>
+            <p class="text-xs sm:text-sm text-slate-600">Pilih 1 item di Kolom A, lalu pilih pengertian/contoh yang tepat di Kolom B.</p>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="px-4 py-1.5 rounded-xl bg-blue-100 text-navy-900 text-sm font-extrabold">Skor: <span id="match-score">0</span> / 7</span>
+            <button onclick="resetMatchingGame()" class="px-3.5 py-1.5 rounded-xl bg-white border border-blue-200 hover:bg-blue-50 text-xs font-bold text-navy-800">
+              <i class="fa-solid fa-rotate-right mr-1"></i> Ulangi
+            </button>
+          </div>
+        </div>
+        <div id="match-feedback" class="hidden mb-4 px-4 py-3 rounded-2xl text-sm font-bold flex items-center gap-2"></div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <div class="text-xs font-extrabold uppercase text-blue-700 mb-2.5">Kolom A (Jenis Platform / Fitur)</div>
+            <div id="match-col-a" class="space-y-2.5"></div>
+          </div>
+          <div>
+            <div class="text-xs font-extrabold uppercase text-navy-700 mb-2.5">Kolom B (Pengertian / Contoh)</div>
+            <div id="match-col-b" class="space-y-2.5"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== TAB 4: LATIHAN ESSAY (AKTIVITAS 1 & 3 MODUL) ===== -->
+      <div id="gpanel-essay" class="gpanel hidden space-y-6">
+        <div>
+          <h3 class="font-display font-extrabold text-lg text-navy-900 mb-3"><i class="fa-solid fa-pen-nib text-blue-600 mr-2"></i>Aktivitas 1: Essay Media Sosial</h3>
+          <div id="essay-akt1-list" class="space-y-3.5"></div>
+        </div>
+        <div>
+          <h3 class="font-display font-extrabold text-lg text-navy-900 mb-3"><i class="fa-solid fa-briefcase text-blue-600 mr-2"></i>Aktivitas 3: Essay Profesi Informatika</h3>
+          <div id="essay-akt3-list" class="space-y-3.5"></div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ================= FOOTER ================= -->
+  <footer class="mt-auto border-t-2 border-blue-200 bg-white/80 backdrop-blur-sm py-3.5">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-600 font-medium">
+      <div><i class="fa-solid fa-graduation-cap text-blue-600 mr-1.5"></i>Informatika Kelas XII — Dampak Sosial Informatika (Mode 3D)</div>
+      <div>Sekolah Islam Plus Tahfizh ATTAUFIQ Jambi</div>
+    </div>
+  </footer>
+
+  <!-- ================= JAVASCRIPT ================= -->
+  <script>
+    // =========================================================================
+    // 1. DATA MATERI, QUIZ & GAME
+    // =========================================================================
+
+    const PLATFORM_DATA = [
+      {
+        id: 'plat-1', no: 1, title: 'Collaborative Projects', shortDesc: 'membuat & menyunting konten bersama',
+        desc: 'Platform kolaboratif yang memungkinkan pengguna secara bersama-sama membuat dan menyunting konten pengetahuan.',
+        examples: ['Wikipedia'], icon: 'fa-people-group',
+        insight: 'Mendorong budaya berbagi ilmu terbuka (crowdsourcing), namun pembaca tetap perlu memverifikasi kebenaran referensi.',
+      },
+      {
+        id: 'plat-2', no: 2, title: 'Content Communities', shortDesc: 'berbagi video, foto, dan audio',
+        desc: 'Digunakan untuk berbagi berbagai jenis konten multimedia seperti video, foto, dan audio kepada publik.',
+        examples: ['YouTube', 'Vimeo'], icon: 'fa-circle-play',
+        insight: 'Membuka peluang karir kreator konten dan edukasi visual, sekaligus menuntut penghormatan terhadap hak cipta.',
+      },
+      {
+        id: 'plat-3', no: 3, title: 'Blogs & Microblogs', shortDesc: 'menulis dan membagikan opini',
+        desc: 'Media digital untuk menulis dan membagikan opini, artikel, maupun informasi secara terbuka dan cepat.',
+        examples: ['Blog', 'Twitter'], icon: 'fa-feather-pointed',
+        insight: 'Mempercepat arus informasi publik; literasi digital diperlukan agar terhindar dari hoaks.',
+      },
+      {
+        id: 'plat-4', no: 4, title: 'Social Networking Sites', shortDesc: 'membangun relasi sosial',
+        desc: 'Menghubungkan pengguna melalui profil untuk membangun dan menjaga relasi sosial maupun profesional.',
+        examples: ['Facebook', 'LinkedIn'], icon: 'fa-users-between-lines',
+        insight: 'Memperluas jejaring lintas wilayah; pengguna wajib menjaga keamanan privasi data pribadi.',
+      },
+      {
+        id: 'plat-5', no: 5, title: 'Virtual Social Worlds', shortDesc: 'jejaring sosial di dunia virtual',
+        desc: 'Menggabungkan jejaring sosial dan dunia virtual interaktif berbasis avatar di lingkungan 3D.',
+        examples: ['Game online', 'dunia virtual 3D'], icon: 'fa-vr-cardboard',
+        insight: 'Menghadirkan interaksi imersif lintas negara; memerlukan keseimbangan waktu dengan kehidupan nyata.',
+      },
+    ];
+
+    const FEATURE_DATA = [
+      { id: 'fit-1', no: 1, title: 'Relationship Networks', category: 'sosial', shortDesc: 'membangun hubungan', desc: 'Fokus membangun dan menjaga hubungan antar pengguna.', examples: ['Facebook', 'LinkedIn'], icon: 'fa-handshake' },
+      { id: 'fit-2', no: 2, title: 'Media Sharing Networks', category: 'konten', shortDesc: 'berbagi foto & video', desc: 'Berbagi foto, video, dan konten visual secara luas.', examples: ['Instagram', 'YouTube'], icon: 'fa-camera-retro' },
+      { id: 'fit-3', no: 3, title: 'Online Reviews', category: 'ekonomi', shortDesc: 'memberi ulasan', desc: 'Memberikan ulasan berbasis lokasi dan pengalaman pengguna.', examples: ['TripAdvisor', 'Yelp'], icon: 'fa-star-half-stroke' },
+      { id: 'fit-4', no: 4, title: 'Forum Diskusi', category: 'sosial', shortDesc: 'diskusi topik tertentu', desc: 'Diskusi dan bertukar informasi berdasarkan topik atau minat tertentu.', examples: ['Kaskus', 'Reddit'], icon: 'fa-comments' },
+      { id: 'fit-5', no: 5, title: 'Social Publishing Platforms', category: 'konten', shortDesc: 'mempublikasikan artikel', desc: 'Mempublikasikan artikel, opini, tulisan reflektif, atau vlog.', examples: ['Blog', 'Medium'], icon: 'fa-newspaper' },
+      { id: 'fit-6', no: 6, title: 'Bookmarking Sites', category: 'konten', shortDesc: 'menyimpan konten', desc: 'Mengumpulkan dan menyimpan konten inspiratif dari internet.', examples: ['Pinterest'], icon: 'fa-bookmark' },
+      { id: 'fit-7', no: 7, title: 'Interest-Based Networks', category: 'sosial', shortDesc: 'menghubungkan minat sama', desc: 'Menghubungkan pengguna yang memiliki hobi atau minat yang sama.', examples: ['Goodreads', 'IMDB'], icon: 'fa-heart-circle-check' },
+      { id: 'fit-8', no: 8, title: 'E-Commerce', category: 'ekonomi', shortDesc: 'transaksi jual beli daring', desc: 'Memfasilitasi transaksi jual beli barang dan jasa secara daring.', examples: ['Tokopedia', 'Shopee'], icon: 'fa-bag-shopping' },
+    ];
+
+    const QUIZ_QUESTIONS = [
+      {
+        category: 'Jenis Platform',
+        q: 'Platform media sosial yang memungkinkan pengguna secara kolaboratif membuat dan menyunting konten bersama seperti Wikipedia disebut...',
+        options: ['Content Communities', 'Collaborative Projects', 'Social Networking Sites', 'Virtual Social Worlds'],
+        answer: 1,
+        explanation: 'Collaborative Projects adalah platform kolaboratif untuk membuat dan menyunting konten bersama, contohnya Wikipedia.',
+      },
+      {
+        category: 'Jenis Platform',
+        q: 'YouTube dan Vimeo termasuk ke dalam jenis platform media sosial...',
+        options: ['Blogs & Microblogs', 'Virtual Social Worlds', 'Content Communities', 'Online Reviews'],
+        answer: 2,
+        explanation: 'Content Communities digunakan untuk berbagi konten multimedia seperti video, foto, dan audio (YouTube, Vimeo).',
+      },
+      {
+        category: 'Jenis Fitur',
+        q: 'Fitur media sosial yang berfokus mengumpulkan dan menyimpan konten inspiratif dari internet seperti Pinterest adalah...',
+        options: ['Bookmarking Sites', 'Forum Diskusi', 'Social Publishing Platforms', 'Interest-Based Networks'],
+        answer: 0,
+        explanation: 'Bookmarking Sites (contoh: Pinterest) berfungsi mengumpulkan dan menyimpan konten dari internet.',
+      },
+      {
+        category: 'Jenis Fitur',
+        q: 'Goodreads dan IMDB merupakan contoh fitur media sosial yang menghubungkan pengguna berdasarkan kesamaan hobi atau minat, yaitu...',
+        options: ['Relationship Networks', 'Online Reviews', 'Interest-Based Networks', 'E-Commerce'],
+        answer: 2,
+        explanation: 'Interest-Based Networks menghubungkan pengguna dengan minat yang sama, seperti pecinta buku (Goodreads) atau film (IMDB).',
+      },
+      {
+        category: 'Jenis Fitur',
+        q: 'Manakah pasangan yang TEPAT antara fitur media sosial dan contohnya?',
+        options: ['Online Reviews — Kaskus & Reddit', 'Forum Diskusi — TripAdvisor & Yelp', 'E-Commerce — Tokopedia & Shopee', 'Social Publishing — Wikipedia'],
+        answer: 2,
+        explanation: 'E-Commerce memfasilitasi transaksi jual beli secara daring, dengan contoh populer Tokopedia dan Shopee.',
+      },
+      {
+        category: 'Profesi Software',
+        q: 'Profesi yang bertugas menganalisa sistem, kelebihan/kekurangan, studi kelayakan, hingga merancang desain sistem adalah...',
+        options: ['Programmer', 'Sistem Analis', 'EDP Operator', 'Technical Engineer'],
+        answer: 1,
+        explanation: 'Sistem Analis melakukan analisa, studi kelayakan, dan desain sistem sebelum diimplementasikan oleh Programmer.',
+      },
+      {
+        category: 'Profesi Software',
+        q: 'Apa perbedaan utama antara Web Designer dan Web Programmer?',
+        options: [
+          'Web Designer memperbaiki hardware, Web Programmer mengatur jaringan',
+          'Web Designer merencanakan & mendesain web, Web Programmer mengimplementasikannya menjadi program web',
+          'Web Designer mengelola hak akses server, Web Programmer mengolah data EDP',
+          'Keduanya memiliki tugas yang persis sama',
+        ],
+        answer: 1,
+        explanation: 'Web Designer merencanakan, menganalisis, dan mendesain aplikasi web, sedangkan Web Programmer membuat program web sesuai rancangan tersebut.',
+      },
+      {
+        category: 'Profesi Hardware',
+        q: 'Profesi di bidang perangkat keras yang menangani teknis jaringan komputer mulai dari maintenance hingga troubleshooting adalah...',
+        options: ['Networking Engineer', 'System Administrator', 'Technical Engineer', 'Web Programmer'],
+        answer: 0,
+        explanation: 'Networking Engineer berkecimpung di bidang teknis jaringan komputer dari maintenance hingga troubleshooting.',
+      },
+      {
+        category: 'Operasional SI',
+        q: 'Siapakah profesi yang memiliki wewenang PALING TINGGI terhadap sebuah sistem informasi (mengelola hardware, software, dan SDM)?',
+        options: ['System Administrator', 'Sistem Analis', 'EDP Operator', 'MIS Director'],
+        answer: 3,
+        explanation: 'MIS Director memiliki wewenang paling tinggi dalam memanajemen sistem informasi secara keseluruhan.',
+      },
+      {
+        category: 'Operasional SI',
+        q: 'Orang yang bertugas mengoperasikan program-program Electronic Data Processing di dalam perusahaan disebut...',
+        options: ['MIS Director', 'EDP Operator', 'Technical Engineer', 'Programmer'],
+        answer: 1,
+        explanation: 'EDP Operator bertugas mengoperasikan program yang berhubungan dengan Electronic Data Processing.',
+      },
+    ];
+
+    const ARCADE_ITEMS = [
+      { name: 'Wikipedia', clue: 'Menyunting konten bersama', cat: 'platform' },
+      { name: 'YouTube & Vimeo', clue: 'Berbagi video & audio', cat: 'platform' },
+      { name: 'Virtual Social Worlds', clue: 'Dunia virtual 3D berbasis avatar', cat: 'platform' },
+      { name: 'Blogs & Microblogs', clue: 'Menulis & membagikan opini', cat: 'platform' },
+      { name: 'TripAdvisor & Yelp', clue: 'Ulasan berbasis lokasi', cat: 'fitur' },
+      { name: 'Pinterest', clue: 'Bookmarking Sites', cat: 'fitur' },
+      { name: 'Tokopedia & Shopee', clue: 'Transaksi E-Commerce daring', cat: 'fitur' },
+      { name: 'Kaskus & Reddit', clue: 'Forum Diskusi topik tertentu', cat: 'fitur' },
+      { name: 'Goodreads & IMDB', clue: 'Interest-Based Networks', cat: 'fitur' },
+      { name: 'Sistem Analis', clue: 'Studi kelayakan & desain sistem', cat: 'software' },
+      { name: 'Programmer', clue: 'Membuat program/aplikasi', cat: 'software' },
+      { name: 'Web Designer', clue: 'Perencanaan & desain web', cat: 'software' },
+      { name: 'Web Programmer', clue: 'Implementasi kode web', cat: 'software' },
+      { name: 'Technical Engineer', clue: 'Perbaikan perangkat komputer', cat: 'hardware' },
+      { name: 'Networking Engineer', clue: 'Troubleshooting jaringan', cat: 'hardware' },
+      { name: 'EDP Operator', clue: 'Electronic Data Processing', cat: 'operasional' },
+      { name: 'System Administrator', clue: 'Mengatur hak akses sistem', cat: 'operasional' },
+      { name: 'MIS Director', clue: 'Wewenang tertinggi SI', cat: 'operasional' },
+    ];
+
+    const MATCHING_PAIRS = [
+      { id: 1, left: '1. Collaborative Projects', rightCode: 'E', rightText: 'Platform kolaboratif yang memungkinkan pengguna menulis dan menyunting konten bersama' },
+      { id: 2, left: '2. Content Communities', rightCode: 'C', rightText: 'Media berbagi konten video, gambar, dan audio seperti YouTube' },
+      { id: 3, left: '3. Social Networking Sites', rightCode: 'D', rightText: 'Media sosial yang berfokus pada membangun hubungan antar pengguna seperti Facebook' },
+      { id: 4, left: '4. Blogs & Microblogs', rightCode: 'A', rightText: 'Media sosial untuk menulis dan berbagi artikel atau pendapat secara terbuka seperti blog dan Twitter' },
+      { id: 5, left: '5. Forum Diskusi', rightCode: 'G', rightText: 'Media untuk berdiskusi dan bertukar informasi berdasarkan topik tertentu' },
+      { id: 6, left: '6. Online Reviews', rightCode: 'F', rightText: 'Media sosial berbasis ulasan lokasi atau layanan untuk membantu pengambilan keputusan' },
+      { id: 7, left: '7. E-Commerce', rightCode: 'B', rightText: 'Platform jual beli online yang memungkinkan transaksi secara daring' },
+    ];
+
+    const ESSAY_AKT1 = [
+      { q: '1. Jelaskan apa yang dimaksud dengan platform media sosial.', hint: 'Media digital berbasis internet untuk berinteraksi, membangun relasi, berbagi konten, berdiskusi, hingga bertransaksi ekonomi secara daring.' },
+      { q: '2. Sebutkan dan jelaskan tiga jenis platform media sosial beserta contoh masing-masing.', hint: 'Collaborative Projects (Wikipedia), Content Communities (YouTube/Vimeo), Social Networking Sites (Facebook/LinkedIn).' },
+      { q: '3. Apa perbedaan antara Social Networking Sites dan Content Communities? Jelaskan berdasarkan fungsi dan jenis konten yang dibagikan.', hint: 'Social Networking Sites berfokus pada profil & relasi sosial antar pengguna, sedangkan Content Communities berfokus pada distribusi konten media (video, foto, audio).' },
+      { q: '4. Jelaskan peran fitur Online Reviews dalam kehidupan masyarakat digital serta dampak positif dan negatifnya.', hint: 'Membantu pengambilan keputusan konsumen. Positif: transparansi kualitas layanan. Negatif: risiko ulasan palsu (fake review).' },
+      { q: '5. Jelaskan dampak sosial dari penggunaan media sharing networks bagi pelajar jika digunakan secara tidak bijak.', hint: 'Kecanduan layar, gangguan fokus belajar, perbandingan sosial, kebocoran privasi, dan risiko cyberbullying.' },
+    ];
+
+    const ESSAY_AKT3 = [
+      { q: '1. Tuliskan perbedaan dari profesi dan pekerjaan.', hint: 'Pekerjaan adalah aktivitas mencari nafkah tanpa selalu menuntut keahlian khusus; Profesi menuntut keahlian, pendidikan/sertifikasi, dan kode etik khusus.' },
+      { q: '2. Sebutkan 3 jenis profesi Teknik Informatika dan jelaskan.', hint: 'Programmer (membuat program), Networking Engineer (maintenance & troubleshooting jaringan), System Administrator (administrasi & hak akses sistem).' },
+      { q: '3. Sebutkan jenis-jenis sertifikat profesi di bidang informatika dan jelaskan.', hint: 'Cisco CCNA / MikroTik MTCNA (Jaringan), CompTIA Security+ (Keamanan Siber), AWS/Google Cloud (Komputasi Awan), Sertifikasi BNSP (Kompetensi Nasional).' },
+      { q: '4. Apa perbedaan tugas antara System Analyst dan Programmer berdasarkan peran masing-masing dalam pengembangan sistem?', hint: 'System Analyst merancang analisis kebutuhan, studi kelayakan & desain sistem; Programmer mengimplementasikan rancangan tersebut ke dalam kode program.' },
+    ];
+
+    // =========================================================================
+    // 2. AUDIO SINTESIS (TONE.JS)
+    // =========================================================================
+    let soundEnabled = true;
+    let synth = null;
+
+    function playTone(type) {
+      if (!soundEnabled || typeof Tone === 'undefined') return;
+      try {
+        if (Tone.context.state !== 'running') Tone.start();
+        if (!synth) synth = new Tone.PolySynth(Tone.Synth).toDestination();
+        if (type === 'correct') {
+          synth.triggerAttackRelease(['C5', 'E5', 'G5'], '16n');
+        } else if (type === 'wrong') {
+          synth.triggerAttackRelease(['E3', 'Eb3'], '8n');
+        } else if (type === 'click') {
+          synth.triggerAttackRelease('A4', '32n');
+        } else if (type === 'win') {
+          const now = Tone.now();
+          synth.triggerAttackRelease('C5', '16n', now);
+          synth.triggerAttackRelease('E5', '16n', now + 0.1);
+          synth.triggerAttackRelease('G5', '16n', now + 0.2);
+          synth.triggerAttackRelease('C6', '8n', now + 0.3);
+        }
+      } catch (e) {
+        // Abaikan jika browser membatasi autoplay audio
+      }
+    }
+
+    function toggleSound() {
+      soundEnabled = !soundEnabled;
+      const icon = document.getElementById('sound-icon');
+      if (icon) {
+        icon.className = soundEnabled ? 'fa-solid fa-volume-high text-sm' : 'fa-solid fa-volume-xmark text-sm text-slate-400';
+      }
+      if (soundEnabled) playTone('click');
+    }
+
+    // =========================================================================
+    // 3. NAVIGASI, TILT 3D & RENDER MINDMAP
+    // =========================================================================
+    const visitedTopics = new Set();
+    let tiltEnabled = true;
+    let currentMindmapMode = 'board';
+
+    function navigateTo(viewName, highlightElementId = null) {
+      playTone('click');
+      const views = ['mindmap', 'platform', 'fitur', 'profesi', 'games'];
+      views.forEach((v) => {
+        const sec = document.getElementById(`view-${v}`);
+        const btn = document.getElementById(`nav-${v}`);
+        if (sec) sec.classList.toggle('hidden', v !== viewName);
+        if (btn) {
+          if (v === viewName) {
+            btn.className = 'nav-btn px-3 py-2 rounded-xl text-xs sm:text-sm font-extrabold flex items-center gap-1.5 transition-all whitespace-nowrap bg-blue-600 text-white shadow-sm';
+          } else {
+            btn.className = 'nav-btn px-3 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-1.5 transition-all whitespace-nowrap text-navy-800 hover:bg-blue-50';
+          }
+        }
+      });
+
+      if (['platform', 'fitur', 'profesi', 'games'].includes(viewName)) {
+        visitedTopics.add(viewName);
+        const pct = Math.round((visitedTopics.size / 4) * 100);
+        const pText = document.getElementById('progress-text');
+        const pBar = document.getElementById('progress-bar');
+        if (pText) pText.textContent = `${visitedTopics.size}/4`;
+        if (pBar) pBar.style.width = `${pct}%`;
+      }
+
+      if (viewName === 'mindmap') {
+        setTimeout(() => {
+          resizeHero3D();
+          if (currentMindmapMode === 'orbit') resizeOrbit3D();
+        }, 60);
+      }
+
+      if (highlightElementId) {
+        setTimeout(() => {
+          const target = document.getElementById(highlightElementId);
+          if (target) {
+            target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            target.classList.remove('highlight-ring');
+            void target.offsetWidth;
+            target.classList.add('highlight-ring');
+          }
+        }, 120);
+      } else {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    }
+
+    function setMindmapMode(mode) {
+      playTone('click');
+      currentMindmapMode = mode;
+      const boardWrap = document.getElementById('mindmap-board-wrapper');
+      const orbitWrap = document.getElementById('mindmap-orbit-wrapper');
+      const btnBoard = document.getElementById('btn-mode-board');
+      const btnOrbit = document.getElementById('btn-mode-orbit');
+      const btnTilt = document.getElementById('btn-tilt-toggle');
+
+      if (mode === 'board') {
+        boardWrap.classList.remove('hidden');
+        orbitWrap.classList.add('hidden');
+        btnBoard.className = 'px-3 py-1.5 rounded-lg text-xs font-extrabold bg-blue-600 text-white shadow-sm transition-all';
+        btnOrbit.className = 'px-3 py-1.5 rounded-lg text-xs font-extrabold text-navy-800 hover:bg-white/70 transition-all';
+        btnTilt.classList.remove('hidden');
+        setTimeout(resizeHero3D, 50);
+      } else {
+        boardWrap.classList.add('hidden');
+        orbitWrap.classList.remove('hidden');
+        btnOrbit.className = 'px-3 py-1.5 rounded-lg text-xs font-extrabold bg-blue-600 text-white shadow-sm transition-all';
+        btnBoard.className = 'px-3 py-1.5 rounded-lg text-xs font-extrabold text-navy-800 hover:bg-white/70 transition-all';
+        btnTilt.classList.add('hidden');
+        setTimeout(() => {
+          if (!orbitInitialized) initOrbit3D();
+          resizeOrbit3D();
+        }, 60);
+      }
+    }
+
+    function toggleOrientation() {
+      playTone('click');
+      const body = document.getElementById('orientation-body');
+      const label = document.getElementById('orientation-toggle-label');
+      const icon = document.getElementById('orientation-toggle-icon');
+      if (!body) return;
+      const isHidden = body.classList.toggle('hidden');
+      if (label) label.textContent = isHidden ? 'Tampilkan' : 'Sembunyikan';
+      if (icon) icon.className = isHidden ? 'fa-solid fa-chevron-down text-[10px]' : 'fa-solid fa-chevron-up text-[10px]';
+    }
+
+    function toggle3DTilt() {
+      tiltEnabled = !tiltEnabled;
+      document.getElementById('tilt-status').textContent = tiltEnabled ? 'ON' : 'OFF';
+      const board = document.getElementById('mindmap-3d-board');
+      if (!tiltEnabled && board) {
+        board.style.transform = 'rotateX(0deg) rotateY(0deg)';
+      }
+    }
+
+    // Efek 3D Tilt halus mengikuti kursor pada Peta Konsep 3D
+    function setupBoardTilt() {
+      const stage = document.getElementById('mindmap-board-wrapper');
+      const board = document.getElementById('mindmap-3d-board');
+      if (!stage || !board) return;
+
+      stage.addEventListener('mousemove', (e) => {
+        if (!tiltEnabled || window.innerWidth < 1024) return;
+        const rect = stage.getBoundingClientRect();
+        const x = (e.clientX - rect.left) / rect.width - 0.5;
+        const y = (e.clientY - rect.top) / rect.height - 0.5;
+        board.style.transform = `rotateY(${(x * 7).toFixed(2)}deg) rotateX(${(-y * 5).toFixed(2)}deg)`;
+      });
+
+      stage.addEventListener('mouseleave', () => {
+        board.style.transform = 'rotateX(0deg) rotateY(0deg)';
+      });
+    }
+
+    function renderMindmapLists() {
+      const platList = document.getElementById('mindmap-platform-list');
+      if (platList) {
+        platList.innerHTML = PLATFORM_DATA.map((p) => `
+          <button onclick="navigateTo('platform', '${p.id}')" class="item-pill-3d w-full rounded-2xl p-2 flex items-center gap-2 text-left">
+            <span class="w-7 h-7 rounded-full pill-header-3d text-white text-xs font-extrabold flex items-center justify-center shrink-0">${p.no}</span>
+            <div class="flex-1 min-w-0">
+              <div class="font-display font-extrabold text-xs text-navy-900 truncate">${p.title}</div>
+              <div class="text-[10px] text-slate-600 leading-tight">(${p.shortDesc})</div>
+            </div>
+            <div class="px-2.5 py-1.5 rounded-xl bg-blue-100/90 border border-blue-200 text-[10px] font-extrabold text-navy-800 text-center shrink-0 max-w-[96px] leading-tight">
+              ${p.examples.join(', ')}
+            </div>
+          </button>
+        `).join('');
+      }
+
+      const fitList = document.getElementById('mindmap-fitur-list');
+      if (fitList) {
+        fitList.innerHTML = FEATURE_DATA.map((f) => `
+          <button onclick="navigateTo('fitur', '${f.id}')" class="item-pill-3d w-full rounded-2xl px-2 py-1.5 flex items-center gap-2 text-left">
+            <span class="w-6 h-6 rounded-full pill-header-3d text-white text-[11px] font-extrabold flex items-center justify-center shrink-0">${f.no}</span>
+            <div class="flex-1 min-w-0">
+              <div class="font-display font-extrabold text-[11px] text-navy-900 truncate">${f.title}</div>
+              <div class="text-[10px] text-slate-500 leading-tight truncate">(${f.shortDesc})</div>
+            </div>
+            <div class="px-2 py-1 rounded-xl bg-blue-100/90 border border-blue-200 text-[10px] font-extrabold text-navy-800 text-center shrink-0 max-w-[92px] leading-tight">
+              ${f.examples.join(', ')}
+            </div>
+          </button>
+        `).join('');
+      }
+    }
+
+    // =========================================================================
+    // 4. RENDER INFOGRAFIS PLATFORM & FITUR
+    // =========================================================================
+    function renderInfographicPlatform() {
+      const el = document.getElementById('infographic-platform-grid');
+      if (!el) return;
+      el.innerHTML = PLATFORM_DATA.map((item, idx) => `
+        <article id="${item.id}" class="card-3d rounded-3xl p-6 flex flex-col justify-between relative overflow-hidden">
+          <span class="absolute -right-2 -top-3 font-display text-7xl font-extrabold text-blue-100/80 select-none pointer-events-none">0${item.no}</span>
+          <div class="relative z-10">
+            <div class="flex items-center gap-3.5 mb-4">
+              <div class="w-12 h-12 rounded-2xl pill-header-3d text-white flex items-center justify-center shrink-0">
+                <i class="fa-solid ${item.icon} text-xl"></i>
+              </div>
+              <div>
+                <span class="text-[11px] font-extrabold uppercase text-blue-600">Platform 0${item.no}</span>
+                <h3 class="font-display font-extrabold text-lg text-navy-900 leading-snug">${item.title}</h3>
+              </div>
+            </div>
+            <p class="text-sm text-slate-600 leading-relaxed mb-4">${item.desc}</p>
+            <div class="flex flex-wrap gap-1.5 mb-4">
+              ${item.examples.map((ex) => `<span class="px-3 py-1 rounded-full bg-blue-100 text-navy-800 text-xs font-extrabold border border-blue-200">#${ex}</span>`).join('')}
+            </div>
+          </div>
+          <div class="relative z-10 pt-3 border-t border-blue-100">
+            <button onclick="document.getElementById('p-ins-${idx}').classList.toggle('hidden')" class="w-full flex items-center justify-between text-xs font-extrabold text-blue-700 hover:text-navy-900">
+              <span><i class="fa-solid fa-lightbulb text-amber-500 mr-1.5"></i>Dampak Sosial & Catatan</span>
+              <i class="fa-solid fa-chevron-down"></i>
+            </button>
+            <div id="p-ins-${idx}" class="hidden mt-2 p-3 rounded-xl bg-blue-50 border border-blue-200 text-xs text-slate-700 leading-relaxed">${item.insight}</div>
+          </div>
+        </article>
+      `).join('');
+    }
+
+    function renderInfographicFitur(filter = 'all') {
+      const el = document.getElementById('infographic-fitur-grid');
+      if (!el) return;
+      const list = filter === 'all' ? FEATURE_DATA : FEATURE_DATA.filter((f) => f.category === filter);
+      el.innerHTML = list.map((item) => `
+        <article id="${item.id}" class="card-3d rounded-3xl p-5 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-3.5">
+              <div class="w-11 h-11 rounded-2xl pill-header-3d text-white flex items-center justify-center">
+                <i class="fa-solid ${item.icon} text-lg"></i>
+              </div>
+              <span class="w-7 h-7 rounded-full bg-blue-100 text-navy-800 text-xs font-extrabold flex items-center justify-center">${item.no}</span>
+            </div>
+            <h3 class="font-display font-extrabold text-base text-navy-900 mb-1.5">${item.title}</h3>
+            <p class="text-xs text-slate-600 leading-relaxed mb-4">${item.desc}</p>
+          </div>
+          <div class="pt-3 border-t border-blue-100 flex flex-wrap gap-1.5">
+            ${item.examples.map((ex) => `<span class="px-2.5 py-1 rounded-xl bg-blue-50 border border-blue-200 text-[11px] font-extrabold text-navy-800">${ex}</span>`).join('')}
+          </div>
+        </article>
+      `).join('');
+    }
+
+    function filterFeatures(cat) {
+      playTone('click');
+      document.querySelectorAll('.feature-filter-btn').forEach((btn) => {
+        const active = btn.dataset.filter === cat;
+        btn.className = active
+          ? 'feature-filter-btn px-4 py-2 rounded-xl text-xs font-extrabold bg-blue-600 text-white shadow-sm'
+          : 'feature-filter-btn px-4 py-2 rounded-xl text-xs font-extrabold bg-white text-navy-800 border border-blue-200 hover:bg-blue-50';
+      });
+      renderInfographicFitur(cat);
+    }
+
+    // =========================================================================
+    // 5. THREE.JS 3D HERO CENTERPIECE (LAPTOP + GLOBE + WIFI + CHAT + LIKE)
+    // =========================================================================
+    let heroScene, heroCamera, heroRenderer, heroGroup, heroGlobe, heroFloaters = [];
+    let isHeroDragging = false, prevHeroX = 0, prevHeroY = 0;
+
+    function initHero3D() {
+      const canvas = document.getElementById('hero-3d-canvas');
+      if (!canvas || typeof THREE === 'undefined') return;
+
+      heroScene = new THREE.Scene();
+      const w = canvas.clientWidth || 320;
+      const h = canvas.clientHeight || 240;
+
+      heroCamera = new THREE.PerspectiveCamera(42, w / h, 0.1, 100);
+      heroCamera.position.set(0, 1.35, 5.4);
+      heroCamera.lookAt(0, 0.2, 0);
+
+      heroRenderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+      heroRenderer.setSize(w, h, false);
+      heroRenderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+
+      // Pencahayaan 3D cerah & modern
+      heroScene.add(new THREE.AmbientLight(0xffffff, 0.78));
+      const dirLight = new THREE.DirectionalLight(0xffffff, 0.85);
+      dirLight.position.set(4, 7, 5);
+      heroScene.add(dirLight);
+      const blueRim = new THREE.PointLight(0x3b82f6, 1.2, 14);
+      blueRim.position.set(-4, 2, 3);
+      heroScene.add(blueRim);
+
+      heroGroup = new THREE.Group();
+      heroScene.add(heroGroup);
+
+      // --- 1. Alas Laptop 3D ---
+      const baseMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.35, metalness: 0.25 });
+      const darkBlueMat = new THREE.MeshStandardMaterial({ color: 0x102380, roughness: 0.3, metalness: 0.18 });
+      const brightBlueMat = new THREE.MeshStandardMaterial({ color: 0x00a1e9, roughness: 0.25, metalness: 0.12 });
+      const goldMat = new THREE.MeshStandardMaterial({ color: 0xfdd000, emissive: 0xf1b23a, emissiveIntensity: 0.35, roughness: 0.25 });
+
+      const laptopBase = new THREE.Mesh(new THREE.BoxGeometry(2.3, 0.14, 1.5), baseMat);
+      laptopBase.position.set(0, -0.55, 0.25);
+      heroGroup.add(laptopBase);
+
+      const keyboard = new THREE.Mesh(new THREE.BoxGeometry(1.95, 0.04, 0.9), darkBlueMat);
+      keyboard.position.set(0, -0.47, 0.12);
+      heroGroup.add(keyboard);
+
+      // --- 2. Layar Laptop 3D ---
+      const screenPivot = new THREE.Group();
+      screenPivot.position.set(0, -0.48, -0.46);
+      screenPivot.rotation.x = -0.18;
+
+      const lid = new THREE.Mesh(new THREE.BoxGeometry(2.3, 1.55, 0.1), darkBlueMat);
+      lid.position.set(0, 0.78, 0);
+      screenPivot.add(lid);
+
+      const screenFace = new THREE.Mesh(
+        new THREE.PlaneGeometry(2.08, 1.34),
+        new THREE.MeshStandardMaterial({ color: 0x00a1e9, emissive: 0x102380, emissiveIntensity: 0.55 })
+      );
+      screenFace.position.set(0, 0.78, 0.06);
+      screenPivot.add(screenFace);
+
+      // Bola Dunia Wireframe 3D di depan Layar
+      const globeGroup = new THREE.Group();
+      globeGroup.position.set(0, 0.78, 0.35);
+      const globeCore = new THREE.Mesh(
+        new THREE.SphereGeometry(0.42, 20, 20),
+        new THREE.MeshStandardMaterial({ color: 0x60c5f7, transparent: true, opacity: 0.6, roughness: 0.2 })
+      );
+      const globeWire = new THREE.Mesh(
+        new THREE.SphereGeometry(0.44, 12, 10),
+        new THREE.MeshBasicMaterial({ color: 0xfdd000, wireframe: true })
+      );
+      globeGroup.add(globeCore, globeWire);
+      screenPivot.add(globeGroup);
+      heroGlobe = globeGroup;
+
+      heroGroup.add(screenPivot);
+
+      // --- 3. Sinyal Wi-Fi 3D Mengambang di Atas ---
+      const wifiGroup = new THREE.Group();
+      wifiGroup.position.set(0, 1.55, -0.2);
+      [0.24, 0.42, 0.6].forEach((r) => {
+        const arc = new THREE.Mesh(new THREE.TorusGeometry(r, 0.045, 10, 24, Math.PI * 0.65), goldMat);
+        arc.rotation.z = Math.PI * 0.175;
+        wifiGroup.add(arc);
+      });
+      const wifiDot = new THREE.Mesh(new THREE.SphereGeometry(0.08, 12, 12), darkBlueMat);
+      wifiDot.position.y = -0.02;
+      wifiGroup.add(wifiDot);
+      heroGroup.add(wifiGroup);
+      heroFloaters.push({ mesh: wifiGroup, baseY: 1.55, speed: 2.1, phase: 0 });
+
+      // --- 4. Gelembung Chat 3D (Kiri) ---
+      const chatGroup = new THREE.Group();
+      chatGroup.position.set(-1.6, 0.95, 0.1);
+      const chatBox = new THREE.Mesh(new THREE.BoxGeometry(0.78, 0.52, 0.18), brightBlueMat);
+      chatGroup.add(chatBox);
+      [-0.18, 0, 0.18].forEach((dx) => {
+        const dot = new THREE.Mesh(new THREE.SphereGeometry(0.055, 10, 10), new THREE.MeshBasicMaterial({ color: 0xffffff }));
+        dot.position.set(dx, 0, 0.11);
+        chatGroup.add(dot);
+      });
+      heroGroup.add(chatGroup);
+      heroFloaters.push({ mesh: chatGroup, baseY: 0.95, speed: 2.5, phase: 1.3 });
+
+      // --- 5. Ikon Like / Star 3D (Kanan) ---
+      const likeGroup = new THREE.Group();
+      likeGroup.position.set(1.6, 0.95, 0.1);
+      const likeBadge = new THREE.Mesh(new THREE.CylinderGeometry(0.38, 0.38, 0.16, 24), darkBlueMat);
+      likeBadge.rotation.x = Math.PI / 2;
+      const likeCore = new THREE.Mesh(new THREE.OctahedronGeometry(0.18), goldMat);
+      likeCore.position.z = 0.12;
+      likeGroup.add(likeBadge, likeCore);
+      heroGroup.add(likeGroup);
+      heroFloaters.push({ mesh: likeGroup, baseY: 0.95, speed: 2.3, phase: 2.6 });
+
+      // --- 6. Awan Bola 3D Lembut di Bawah Laptop ---
+      const cloudMat = new THREE.MeshStandardMaterial({ color: 0xfbf6ea, roughness: 0.55 });
+      [
+        [-1.1, -0.88, 0.2, 0.45],
+        [-0.45, -0.92, 0.35, 0.52],
+        [0.4, -0.92, 0.3, 0.52],
+        [1.1, -0.88, 0.2, 0.45],
+      ].forEach(([cx, cy, cz, cr]) => {
+        const puff = new THREE.Mesh(new THREE.SphereGeometry(cr, 16, 16), cloudMat);
+        puff.position.set(cx, cy, cz);
+        heroGroup.add(puff);
+      });
+
+      // Interaksi Putar Mouse & Touch
+      const onStart = (x, y) => { isHeroDragging = true; prevHeroX = x; prevHeroY = y; };
+      const onMove = (x, y) => {
+        if (!isHeroDragging) return;
+        heroGroup.rotation.y += (x - prevHeroX) * 0.012;
+        heroGroup.rotation.x = Math.max(-0.45, Math.min(0.45, heroGroup.rotation.x + (y - prevHeroY) * 0.008));
+        prevHeroX = x; prevHeroY = y;
+      };
+      const onEnd = () => { isHeroDragging = false; };
+
+      canvas.addEventListener('mousedown', (e) => onStart(e.clientX, e.clientY));
+      window.addEventListener('mousemove', (e) => onMove(e.clientX, e.clientY));
+      window.addEventListener('mouseup', onEnd);
+      canvas.addEventListener('touchstart', (e) => { if (e.touches[0]) onStart(e.touches[0].clientX, e.touches[0].clientY); }, { passive: true });
+      window.addEventListener('touchmove', (e) => { if (isHeroDragging && e.touches[0]) onMove(e.touches[0].clientX, e.touches[0].clientY); }, { passive: true });
+      window.addEventListener('touchend', onEnd);
+    }
+
+    function resizeHero3D() {
+      const canvas = document.getElementById('hero-3d-canvas');
+      if (!canvas || !heroRenderer || !heroCamera) return;
+      const w = canvas.clientWidth;
+      const h = canvas.clientHeight;
+      if (w > 0 && h > 0) {
+        heroCamera.aspect = w / h;
+        heroCamera.updateProjectionMatrix();
+        heroRenderer.setSize(w, h, false);
+      }
+    }
+
+    // =========================================================================
+    // 6. THREE.JS MODE DUNIA ORBIT 3D PENUH (MINDMAP INTERAKTIF DI RUANG 3D)
+    // =========================================================================
+    let orbitInitialized = false;
+    let orbitScene, orbitCamera, orbitRenderer, orbitWorld, orbitClickable = [];
+    let orbitTheta = 0.25, orbitPhi = 1.15, orbitRadius = 11.5;
+    let isOrbitDragging = false, prevOX = 0, prevOY = 0, orbitMoved = false;
+    const raycaster = new THREE.Raycaster();
+    const pointer = new THREE.Vector2();
+
+    function initOrbit3D() {
+      const canvas = document.getElementById('orbit-3d-canvas');
+      if (!canvas || typeof THREE === 'undefined') return;
+      orbitInitialized = true;
+
+      orbitScene = new THREE.Scene();
+      const w = canvas.clientWidth || 800;
+      const h = canvas.clientHeight || 560;
+      orbitCamera = new THREE.PerspectiveCamera(48, w / h, 0.1, 100);
+      orbitRenderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+      orbitRenderer.setSize(w, h, false);
+      orbitRenderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+
+      orbitScene.add(new THREE.AmbientLight(0xffffff, 0.7));
+      const sun = new THREE.DirectionalLight(0xffffff, 0.95);
+      sun.position.set(8, 12, 8);
+      orbitScene.add(sun);
+
+      orbitWorld = new THREE.Group();
+      orbitScene.add(orbitWorld);
+
+      // Grid Bintang & Cincin Orbit
+      const ringGeo = new THREE.RingGeometry(4.45, 4.55, 64);
+      const ringMat = new THREE.MeshBasicMaterial({ color: 0x60a5fa, side: THREE.DoubleSide, transparent: true, opacity: 0.35 });
+      const ring = new THREE.Mesh(ringGeo, ringMat);
+      ring.rotation.x = Math.PI / 2;
+      orbitWorld.add(ring);
+
+      // Node Pusat (Dampak Sosial Informatika)
+      const centerMesh = new THREE.Mesh(
+        new THREE.IcosahedronGeometry(1.45, 1),
+        new THREE.MeshStandardMaterial({ color: 0x2563eb, emissive: 0x1d4ed8, emissiveIntensity: 0.4, roughness: 0.2 })
+      );
+      const centerWire = new THREE.Mesh(
+        new THREE.IcosahedronGeometry(1.62, 1),
+        new THREE.MeshBasicMaterial({ color: 0x93c5fd, wireframe: true, transparent: true, opacity: 0.6 })
+      );
+      orbitWorld.add(centerMesh, centerWire);
+
+      // 4 Node Cabang Mengelilingi Pusat
+      const nodes = [
+        { target: 'platform', label: '1. Jenis Platform Media Sosial (Klik untuk buka)', pos: [-4.5, 1.0, 0.5], color: 0x3b82f6, geom: new THREE.DodecahedronGeometry(1.05) },
+        { target: 'fitur', label: '2. Jenis Fitur Media Sosial (Klik untuk buka)', pos: [4.5, 1.0, 0.5], color: 0x0ea5e9, geom: new THREE.OctahedronGeometry(1.1) },
+        { target: 'profesi', label: '3. Profesi Bidang Informatika (Klik untuk buka)', pos: [0, -0.8, 4.5], color: 0x10b981, geom: new THREE.BoxGeometry(1.6, 1.6, 1.6) },
+        { target: 'games', label: '4. Arena Games & Quiz (Klik untuk main)', pos: [0, 1.4, -4.4], color: 0xf59e0b, geom: new THREE.TorusKnotGeometry(0.72, 0.24, 64, 12) },
+      ];
+
+      nodes.forEach((n) => {
+        const mesh = new THREE.Mesh(
+          n.geom,
+          new THREE.MeshStandardMaterial({ color: n.color, roughness: 0.25, metalness: 0.15 })
+        );
+        mesh.position.set(...n.pos);
+        mesh.userData = { target: n.target, label: n.label };
+        orbitWorld.add(mesh);
+        orbitClickable.push(mesh);
+
+        // Garis penghubung 3D ke pusat
+        const lineGeo = new THREE.BufferGeometry().setFromPoints([
+          new THREE.Vector3(0, 0, 0),
+          new THREE.Vector3(...n.pos),
+        ]);
+        const line = new THREE.Line(lineGeo, new THREE.LineBasicMaterial({ color: 0x93c5fd, transparent: true, opacity: 0.7 }));
+        orbitWorld.add(line);
+      });
+
+      // Partikel Bintang Latar
+      const starPos = [];
+      for (let i = 0; i < 140; i++) {
+        starPos.push((Math.random() - 0.5) * 32, (Math.random() - 0.5) * 20, (Math.random() - 0.5) * 32);
+      }
+      const starGeo = new THREE.BufferGeometry();
+      starGeo.setAttribute('position', new THREE.Float32BufferAttribute(starPos, 3));
+      orbitScene.add(new THREE.Points(starGeo, new THREE.PointsMaterial({ color: 0xbfdbfe, size: 0.12 })));
+
+      // Interaksi Kamera Orbit + Raycasting Klik Node
+      const hoverLabel = document.getElementById('orbit-hover-label');
+
+      const updatePointer = (clientX, clientY) => {
+        const rect = canvas.getBoundingClientRect();
+        pointer.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+        pointer.y = -((clientY - rect.top) / rect.height) * 2 + 1;
+      };
+
+      canvas.addEventListener('mousedown', (e) => { isOrbitDragging = true; orbitMoved = false; prevOX = e.clientX; prevOY = e.clientY; });
+      window.addEventListener('mousemove', (e) => {
+        if (isOrbitDragging) {
+          const dx = e.clientX - prevOX;
+          const dy = e.clientY - prevOY;
+          if (Math.abs(dx) > 2 || Math.abs(dy) > 2) orbitMoved = true;
+          orbitTheta -= dx * 0.008;
+          orbitPhi = Math.max(0.35, Math.min(2.4, orbitPhi - dy * 0.008));
+          prevOX = e.clientX; prevOY = e.clientY;
+        } else if (currentMindmapMode === 'orbit') {
+          updatePointer(e.clientX, e.clientY);
+          raycaster.setFromCamera(pointer, orbitCamera);
+          const hits = raycaster.intersectObjects(orbitClickable);
+          if (hits.length > 0) {
+            canvas.style.cursor = 'pointer';
+            hoverLabel.textContent = hits[0].object.userData.label;
+            hoverLabel.classList.remove('hidden');
+          } else {
+            canvas.style.cursor = 'grab';
+            hoverLabel.classList.add('hidden');
+          }
+        }
+      });
+      window.addEventListener('mouseup', (e) => {
+        if (isOrbitDragging && !orbitMoved && currentMindmapMode === 'orbit') {
+          updatePointer(e.clientX, e.clientY);
+          raycaster.setFromCamera(pointer, orbitCamera);
+          const hits = raycaster.intersectObjects(orbitClickable);
+          if (hits.length > 0) navigateTo(hits[0].object.userData.target);
+        }
+        isOrbitDragging = false;
+      });
+
+      canvas.addEventListener('touchstart', (e) => {
+        if (e.touches[0]) { isOrbitDragging = true; orbitMoved = false; prevOX = e.touches[0].clientX; prevOY = e.touches[0].clientY; }
+      }, { passive: true });
+      window.addEventListener('touchmove', (e) => {
+        if (isOrbitDragging && e.touches[0]) {
+          orbitTheta -= (e.touches[0].clientX - prevOX) * 0.01;
+          orbitPhi = Math.max(0.35, Math.min(2.4, orbitPhi - (e.touches[0].clientY - prevOY) * 0.01));
+          prevOX = e.touches[0].clientX; prevOY = e.touches[0].clientY;
+        }
+      }, { passive: true });
+      window.addEventListener('touchend', () => { isOrbitDragging = false; });
+    }
+
+    function resizeOrbit3D() {
+      const canvas = document.getElementById('orbit-3d-canvas');
+      if (!canvas || !orbitRenderer || !orbitCamera) return;
+      const w = canvas.clientWidth;
+      const h = canvas.clientHeight;
+      if (w > 0 && h > 0) {
+        orbitCamera.aspect = w / h;
+        orbitCamera.updateProjectionMatrix();
+        orbitRenderer.setSize(w, h, false);
+      }
+    }
+
+    // Loop Animasi Utama Three.js
+    function animate3D() {
+      requestAnimationFrame(animate3D);
+      const t = performance.now() * 0.001;
+
+      if (heroRenderer && heroScene && heroCamera && currentMindmapMode === 'board') {
+        if (heroGlobe) heroGlobe.rotation.y = t * 0.8;
+        if (heroGroup && !isHeroDragging) {
+          heroGroup.rotation.y = Math.sin(t * 0.55) * 0.22;
+        }
+        heroFloaters.forEach((f) => {
+          f.mesh.position.y = f.baseY + Math.sin(t * f.speed + f.phase) * 0.1;
+        });
+        heroRenderer.render(heroScene, heroCamera);
+      }
+
+      if (orbitInitialized && orbitRenderer && orbitScene && orbitCamera && currentMindmapMode === 'orbit') {
+        if (!isOrbitDragging) orbitTheta += 0.0025;
+        orbitCamera.position.set(
+          orbitRadius * Math.sin(orbitPhi) * Math.sin(orbitTheta),
+          orbitRadius * Math.cos(orbitPhi),
+          orbitRadius * Math.sin(orbitPhi) * Math.cos(orbitTheta)
+        );
+        orbitCamera.lookAt(0, 0, 0);
+        orbitClickable.forEach((m, i) => {
+          m.rotation.y = t * (0.6 + i * 0.15);
+          m.rotation.x = t * 0.35;
+        });
+        orbitRenderer.render(orbitScene, orbitCamera);
+      }
+    }
+
+    // =========================================================================
+    // 7. LOGIKA GAMES & QUIZ
+    // =========================================================================
+    function switchGameTab(tab) {
+      playTone('click');
+      ['quiz', 'arcade', 'match', 'essay'].forEach((id) => {
+        const panel = document.getElementById(`gpanel-${id}`);
+        const btn = document.getElementById(`gtab-${id}`);
+        if (panel) panel.classList.toggle('hidden', id !== tab);
+        if (btn) {
+          btn.className = id === tab
+            ? 'gtab-btn px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-extrabold bg-blue-600 text-white shadow-md transition-all'
+            : 'gtab-btn px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-extrabold bg-white text-navy-800 border-2 border-blue-200 hover:bg-blue-50 transition-all';
+        }
+      });
+    }
+
+    // --- A. QUIZ PILIHAN GANDA ---
+    let qIndex = 0, qScore = 0, qCorrect = 0, qStreak = 0, qAnswered = false;
+
+    function startQuiz() {
+      qIndex = 0; qScore = 0; qCorrect = 0; qStreak = 0; qAnswered = false;
+      document.getElementById('quiz-play-area').classList.remove('hidden');
+      document.getElementById('quiz-result-area').classList.add('hidden');
+      renderQuizQuestion();
+    }
+
+    function renderQuizQuestion() {
+      qAnswered = false;
+      const q = QUIZ_QUESTIONS[qIndex];
+      document.getElementById('quiz-counter').textContent = `Soal ${qIndex + 1} / ${QUIZ_QUESTIONS.length}`;
+      document.getElementById('quiz-score').textContent = qScore;
+      document.getElementById('quiz-progress-bar').style.width = `${((qIndex + 1) / QUIZ_QUESTIONS.length) * 100}%`;
+      document.getElementById('quiz-category-tag').textContent = q.category;
+      document.getElementById('quiz-question-text').textContent = q.q;
+
+      const streakBadge = document.getElementById('quiz-streak');
+      if (qStreak >= 2) {
+        streakBadge.classList.remove('hidden');
+        document.getElementById('quiz-streak-num').textContent = qStreak;
+      } else {
+        streakBadge.classList.add('hidden');
+      }
+
+      document.getElementById('quiz-explanation').classList.add('hidden');
+      document.getElementById('quiz-next-btn').classList.add('hidden');
+
+      const optContainer = document.getElementById('quiz-options');
+      const letters = ['A', 'B', 'C', 'D'];
+      optContainer.innerHTML = q.options.map((opt, idx) => `
+        <button id="qopt-${idx}" onclick="selectQuizOption(${idx})" class="item-pill-3d text-left p-4 rounded-2xl flex items-start gap-3 text-sm font-semibold text-navy-900">
+          <span class="w-7 h-7 rounded-xl bg-blue-100 text-navy-800 font-extrabold text-xs flex items-center justify-center shrink-0">${letters[idx]}</span>
+          <span class="leading-snug">${opt}</span>
+        </button>
+      `).join('');
+    }
+
+    function selectQuizOption(idx) {
+      if (qAnswered) return;
+      qAnswered = true;
+      const q = QUIZ_QUESTIONS[qIndex];
+      const expEl = document.getElementById('quiz-explanation');
+      const isRight = idx === q.answer;
+
+      if (isRight) {
+        playTone('correct');
+        qCorrect++;
+        qStreak++;
+        qScore += 100 + (qStreak > 1 ? (qStreak - 1) * 20 : 0);
+        expEl.className = 'p-4 rounded-2xl border-2 border-emerald-300 bg-emerald-50 text-emerald-900 mb-5 text-sm leading-relaxed';
+        expEl.innerHTML = `<strong><i class="fa-solid fa-circle-check text-emerald-600 mr-1.5"></i>Benar!</strong> ${q.explanation}`;
+      } else {
+        playTone('wrong');
+        qStreak = 0;
+        expEl.className = 'p-4 rounded-2xl border-2 border-rose-300 bg-rose-50 text-rose-900 mb-5 text-sm leading-relaxed';
+        expEl.innerHTML = `<strong><i class="fa-solid fa-circle-xmark text-rose-600 mr-1.5"></i>Kurang tepat.</strong> ${q.explanation}`;
+      }
+
+      q.options.forEach((_, i) => {
+        const btn = document.getElementById(`qopt-${i}`);
+        if (!btn) return;
+        btn.disabled = true;
+        if (i === q.answer) {
+          btn.style.background = '#dcfce7';
+          btn.style.borderColor = '#16a34a';
+        } else if (i === idx && !isRight) {
+          btn.style.background = '#ffe4e6';
+          btn.style.borderColor = '#e11d48';
+        }
+      });
+
+      document.getElementById('quiz-score').textContent = qScore;
+      const nextBtn = document.getElementById('quiz-next-btn');
+      nextBtn.classList.remove('hidden');
+      nextBtn.querySelector('span').textContent = qIndex === QUIZ_QUESTIONS.length - 1 ? 'Lihat Hasil Akhir' : 'Soal Berikutnya';
+    }
+
+    function nextQuizQuestion() {
+      playTone('click');
+      qIndex++;
+      if (qIndex < QUIZ_QUESTIONS.length) {
+        renderQuizQuestion();
+      } else {
+        playTone('win');
+        document.getElementById('quiz-play-area').classList.add('hidden');
+        document.getElementById('quiz-result-area').classList.remove('hidden');
+        document.getElementById('quiz-final-correct').textContent = `${qCorrect}/${QUIZ_QUESTIONS.length}`;
+        document.getElementById('quiz-final-score').textContent = qScore;
+        const msg = qCorrect >= 8
+          ? 'Hebat sekali! Kamu sangat menguasai materi Dampak Sosial Informatika!'
+          : qCorrect >= 5
+            ? 'Bagus! Tingkatkan sedikit lagi dengan meninjau ulang infografis.'
+            : 'Tetap semangat! Yuk pelajari kembali Mindmap 3D lalu coba lagi.';
+        document.getElementById('quiz-result-msg').textContent = msg;
+      }
+    }
+
+    // --- B. GAME ARCADE: SORTIR CEPAT 3D ---
+    let arcadeTimerId = null, arcadeTime = 45, arcadeScore = 0, arcadeLives = 3, arcadeCombo = 0, arcadeBest = 0;
+    let currentArcadeItem = null;
+
+    function startArcadeGame() {
+      playTone('click');
+      clearInterval(arcadeTimerId);
+      arcadeTime = 45; arcadeScore = 0; arcadeLives = 3; arcadeCombo = 0;
+      document.getElementById('arcade-intro').classList.add('hidden');
+      document.getElementById('arcade-gameover').classList.add('hidden');
+      document.getElementById('arcade-play').classList.remove('hidden');
+      document.getElementById('arcade-feedback').textContent = '';
+      updateArcadeHUD();
+      pickNextArcadeItem();
+
+      arcadeTimerId = setInterval(() => {
+        arcadeTime--;
+        document.getElementById('arcade-timer').textContent = arcadeTime;
+        if (arcadeTime <= 0) endArcadeGame('Waktu Habis!');
+      }, 1000);
+    }
+
+    function pickNextArcadeItem() {
+      currentArcadeItem = ARCADE_ITEMS[Math.floor(Math.random() * ARCADE_ITEMS.length)];
+      document.getElementById('arcade-item-name').textContent = currentArcadeItem.name;
+      document.getElementById('arcade-item-clue').textContent = currentArcadeItem.clue;
+      const card = document.getElementById('arcade-card');
+      card.style.transform = 'scale(0.94)';
+      setTimeout(() => { card.style.transform = 'scale(1)'; }, 90);
+    }
+
+    function updateArcadeHUD() {
+      document.getElementById('arcade-timer').textContent = arcadeTime;
+      document.getElementById('arcade-score').textContent = arcadeScore;
+      let hearts = '';
+      for (let i = 0; i < 3; i++) {
+        hearts += i < arcadeLives ? '<i class="fa-solid fa-heart mx-0.5"></i>' : '<i class="fa-regular fa-heart mx-0.5 opacity-30"></i>';
+      }
+      document.getElementById('arcade-lives').innerHTML = hearts;
+      const comboEl = document.getElementById('arcade-combo-badge');
+      if (arcadeCombo >= 2) {
+        comboEl.classList.remove('hidden');
+        comboEl.textContent = `Kombo x${arcadeCombo}`;
+      } else {
+        comboEl.classList.add('hidden');
+      }
+    }
+
+    function submitArcadeAnswer(cat) {
+      if (!currentArcadeItem) return;
+      const fb = document.getElementById('arcade-feedback');
+      if (cat === currentArcadeItem.cat) {
+        playTone('correct');
+        arcadeCombo++;
+        const pts = 50 + arcadeCombo * 10;
+        arcadeScore += pts;
+        fb.className = 'h-7 mt-2 text-center text-sm font-extrabold text-emerald-600';
+        fb.textContent = `Tepat! +${pts} poin`;
+      } else {
+        playTone('wrong');
+        arcadeCombo = 0;
+        arcadeLives--;
+        fb.className = 'h-7 mt-2 text-center text-sm font-extrabold text-rose-600';
+        fb.textContent = `Salah! Nyawa berkurang`;
+        if (arcadeLives <= 0) {
+          updateArcadeHUD();
+          endArcadeGame('Nyawa Habis!');
+          return;
+        }
+      }
+      updateArcadeHUD();
+      pickNextArcadeItem();
+    }
+
+    function endArcadeGame(reason) {
+      clearInterval(arcadeTimerId);
+      playTone('win');
+      if (arcadeScore > arcadeBest) {
+        arcadeBest = arcadeScore;
+        document.getElementById('arcade-best-score').textContent = arcadeBest;
+      }
+      document.getElementById('arcade-play').classList.add('hidden');
+      document.getElementById('arcade-gameover').classList.remove('hidden');
+      document.getElementById('arcade-over-title').textContent = reason;
+      document.getElementById('arcade-final-score').textContent = arcadeScore;
+    }
+
+    // --- C. GAME MENCOCOKKAN (AKTIVITAS 2) ---
+    let selectedLeftId = null;
+    const matchedIds = new Set();
+
+    function renderMatchingGame() {
+      const colA = document.getElementById('match-col-a');
+      const colB = document.getElementById('match-col-b');
+      if (!colA || !colB) return;
+      const colBOrder = ['A', 'B', 'C', 'D', 'E', 'F', 'G'].map((c) => MATCHING_PAIRS.find((p) => p.rightCode === c));
+
+      colA.innerHTML = MATCHING_PAIRS.map((item) => {
+        const done = matchedIds.has(item.id);
+        const sel = selectedLeftId === item.id;
+        let cls = 'bg-blue-50/70 border-blue-200 hover:border-blue-500 text-navy-900';
+        if (done) cls = 'bg-emerald-50 border-emerald-400 text-emerald-900 opacity-85 cursor-default';
+        else if (sel) cls = 'bg-blue-600 border-blue-700 text-white shadow-md';
+
+        return `<button onclick="selectLeftMatch(${item.id})" ${done ? 'disabled' : ''} class="w-full text-left px-4 py-3 rounded-2xl border-2 text-sm font-bold transition-all flex items-center justify-between ${cls}">
+          <span>${item.left}</span>
+          ${done ? `<span class="text-xs px-2 py-0.5 rounded-full bg-emerald-200 text-emerald-900">Cocok (${item.rightCode})</span>` : ''}
+        </button>`;
+      }).join('');
+
+      colB.innerHTML = colBOrder.map((item) => {
+        const done = matchedIds.has(item.id);
+        const cls = done ? 'bg-emerald-50 border-emerald-400 text-emerald-900 opacity-85 cursor-default' : 'bg-white border-blue-200 hover:border-blue-500 text-slate-700';
+        return `<button onclick="selectRightMatch(${item.id}, '${item.rightCode}')" ${done ? 'disabled' : ''} class="w-full text-left px-4 py-2.5 rounded-2xl border-2 text-xs sm:text-sm transition-all flex items-start gap-2.5 ${cls}">
+          <span class="w-6 h-6 rounded-lg ${done ? 'bg-emerald-600 text-white' : 'bg-blue-100 text-navy-800'} font-extrabold text-xs flex items-center justify-center shrink-0 mt-0.5">${item.rightCode}</span>
+          <span>${item.rightText}</span>
+        </button>`;
+      }).join('');
+
+      document.getElementById('match-score').textContent = matchedIds.size;
+    }
+
+    function showMatchFeedback(msg, type) {
+      const fb = document.getElementById('match-feedback');
+      fb.classList.remove('hidden');
+      if (type === 'ok') fb.className = 'mb-4 px-4 py-3 rounded-2xl text-sm font-bold flex items-center gap-2 bg-emerald-50 border border-emerald-300 text-emerald-800';
+      else if (type === 'err') fb.className = 'mb-4 px-4 py-3 rounded-2xl text-sm font-bold flex items-center gap-2 bg-rose-50 border border-rose-300 text-rose-800';
+      else fb.className = 'mb-4 px-4 py-3 rounded-2xl text-sm font-bold flex items-center gap-2 bg-blue-50 border border-blue-300 text-navy-800';
+      fb.textContent = msg;
+    }
+
+    function selectLeftMatch(id) {
+      playTone('click');
+      selectedLeftId = id;
+      const item = MATCHING_PAIRS.find((p) => p.id === id);
+      showMatchFeedback(`Dipilih: ${item.left}. Sekarang klik pasangan di Kolom B.`, 'info');
+      renderMatchingGame();
+    }
+
+    function selectRightMatch(id, code) {
+      if (selectedLeftId === null) {
+        showMatchFeedback('Pilih dulu satu item di Kolom A.', 'err');
+        return;
+      }
+      if (selectedLeftId === id) {
+        playTone('correct');
+        matchedIds.add(id);
+        selectedLeftId = null;
+        if (matchedIds.size === MATCHING_PAIRS.length) {
+          playTone('win');
+          showMatchFeedback('Sempurna! Semua 7 pasangan berhasil dicocokkan!', 'ok');
+        } else {
+          showMatchFeedback(`Tepat! Cocok dengan pilihan ${code}.`, 'ok');
+        }
+      } else {
+        playTone('wrong');
+        showMatchFeedback(`Belum tepat untuk pilihan ${code}, coba lagi!`, 'err');
+      }
+      renderMatchingGame();
+    }
+
+    function resetMatchingGame() {
+      playTone('click');
+      matchedIds.clear();
+      selectedLeftId = null;
+      document.getElementById('match-feedback').classList.add('hidden');
+      renderMatchingGame();
+    }
+
+    // --- D. ESSAY AKTIVITAS 1 & 3 ---
+    function renderEssays() {
+      const build = (items, prefix) => items.map((it, idx) => `
+        <div class="card-3d rounded-2xl p-4 sm:p-5">
+          <h4 class="font-display font-bold text-sm sm:text-base text-navy-900 mb-2.5">${it.q}</h4>
+          <textarea rows="2" placeholder="Tulis jawabanmu di sini..." class="w-full rounded-xl border border-blue-200 focus:border-blue-500 p-2.5 text-sm outline-none"></textarea>
+          <button onclick="document.getElementById('ehint-${prefix}-${idx}').classList.toggle('hidden')" class="mt-2 text-xs font-extrabold text-blue-700 hover:underline">
+            <i class="fa-solid fa-key mr-1"></i>Lihat Poin Kunci
+          </button>
+          <div id="ehint-${prefix}-${idx}" class="hidden mt-2 p-3 rounded-xl bg-blue-50 border border-blue-200 text-xs sm:text-sm text-navy-900">
+            <strong>Kunci:</strong> ${it.hint}
+          </div>
+        </div>
+      `).join('');
+
+      document.getElementById('essay-akt1-list').innerHTML = build(ESSAY_AKT1, 'a1');
+      document.getElementById('essay-akt3-list').innerHTML = build(ESSAY_AKT3, 'a3');
+    }
+
+    // =========================================================================
+    // 8. INISIALISASI PADA WINDOW.ONLOAD
+    // =========================================================================
+    window.onload = function () {
+      try {
+        renderMindmapLists();
+        renderInfographicPlatform();
+        renderInfographicFitur('all');
+        renderMatchingGame();
+        renderEssays();
+        startQuiz();
+        switchGameTab('quiz');
+        setupBoardTilt();
+        initHero3D();
+        navigateTo('mindmap');
+        animate3D();
+
+        window.addEventListener('resize', () => {
+          resizeHero3D();
+          if (orbitInitialized) resizeOrbit3D();
+        });
+      } catch (err) {
+        console.error('Kesalahan inisialisasi:', err);
+      }
+    };
+  </script>
+</body>
+</html>

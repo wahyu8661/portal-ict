@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase';
+import { DSI_MODULE_META, isDsiMateriLink } from './dsiContent';
 import {
   fetchSheet,
   type InfoItem,
@@ -175,6 +176,24 @@ drop policy if exists "portal_read_info" on public.info;
 drop policy if exists "guru_write_info" on public.info;
 create policy "portal_read_info" on public.info for select using (true);
 create policy "guru_write_info" on public.info for all to authenticated using (true) with check (true);
+
+-- Tambahkan modul interaktif Dampak Sosial Informatika (Informatika Kelas 12) jika belum ada
+insert into public.materi (mapel, kelas, urutan, judul, deskripsi, tag, link, image)
+select
+  'Informatika',
+  'Kelas 12',
+  4,
+  'Dampak sosial informatika',
+  'yuk pelajari tentang dunia informatika di lingkup yang lebih luas di dunia nyata',
+  'DSI',
+  '#/materi/dsi',
+  ''
+where not exists (
+  select 1 from public.materi
+  where lower(mapel) = 'informatika'
+    and lower(kelas) = 'kelas 12'
+    and (upper(tag) = 'DSI' or lower(judul) = 'dampak sosial informatika')
+);
 
 -- Refresh schema cache PostgREST agar API langsung mengenali tabel baru
 notify pgrst, 'reload schema';
@@ -412,6 +431,44 @@ export async function loadPortalData(): Promise<PortalLoadResult> {
   };
 
   const rMateri = pick(sbMateri, shMateri);
+
+  const hasDsiModule = rMateri.items.some(
+    (m) =>
+      m.Mapel === DSI_MODULE_META.mapel &&
+      normalizeKelas(m.Kelas || '') === DSI_MODULE_META.kelas &&
+      (m.Tag?.toUpperCase() === DSI_MODULE_META.tag ||
+        m.Judul?.trim().toLowerCase() === DSI_MODULE_META.judul.toLowerCase() ||
+        isDsiMateriLink(m.Link))
+  );
+
+  const mergedMateri: MateriItem[] = hasDsiModule
+    ? rMateri.items.map((m) => {
+        const isDsiRow =
+          m.Mapel === DSI_MODULE_META.mapel &&
+          normalizeKelas(m.Kelas || '') === DSI_MODULE_META.kelas &&
+          (m.Tag?.toUpperCase() === DSI_MODULE_META.tag ||
+            m.Judul?.trim().toLowerCase() === DSI_MODULE_META.judul.toLowerCase() ||
+            isDsiMateriLink(m.Link));
+        if (!isDsiRow) return m;
+        return {
+          ...m,
+          Link: m.Link && m.Link.trim() ? m.Link : DSI_MODULE_META.link,
+        };
+      })
+    : [
+        ...rMateri.items,
+        {
+          Mapel: DSI_MODULE_META.mapel,
+          Kelas: DSI_MODULE_META.kelas,
+          Urutan: DSI_MODULE_META.urutan,
+          Judul: DSI_MODULE_META.judul,
+          Deskripsi: DSI_MODULE_META.deskripsi,
+          Tag: DSI_MODULE_META.tag,
+          Link: DSI_MODULE_META.link,
+          Image: '',
+        },
+      ];
+
   const rItSkills = sbItSkills.exists
     ? { items: sbItSkills.rows, mode: 'supabase' as DataSourceMode }
     : { items: [] as ItSkillItem[], mode: 'empty' as DataSourceMode };
@@ -421,7 +478,7 @@ export async function loadPortalData(): Promise<PortalLoadResult> {
   const rInfo = pick(sbInfo, shInfo);
 
   return {
-    materi: rMateri.items,
+    materi: mergedMateri,
     itSkills: rItSkills.items,
     tugas: rTugas.items,
     nilai: rNilai.items,

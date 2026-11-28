@@ -1,5 +1,6 @@
 import { type FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, motion, MotionConfig } from 'motion/react';
+import { DsiMateriPage } from './components/DsiMateriPage';
 import { CardMediaImage, MediaBox } from './components/MediaBox';
 import { KaryaDetailPage } from './components/KaryaDetailPage';
 import { PointerFX } from './components/PointerFX';
@@ -12,6 +13,7 @@ import {
 } from './components/SmoothMotion';
 import { SubjectSwitch } from './components/SubjectSwitch';
 import { TeacherPortal } from './components/TeacherPortal';
+import { isDsiMateriLink } from './data/dsiContent';
 import { type KaryaGallerySlug, resolveKaryaGallerySlug } from './data/karyaGalleries';
 import {
   DEFAULT_INFO,
@@ -35,7 +37,14 @@ import {
 } from './data/sheets';
 import { loadPortalData } from './data/supabaseDb';
 
-type PortalPage = 'home' | 'materi' | 'it-skills' | 'tugas' | 'nilai' | 'karya-detail';
+type PortalPage =
+  | 'home'
+  | 'materi'
+  | 'materi-dsi'
+  | 'it-skills'
+  | 'tugas'
+  | 'nilai'
+  | 'karya-detail';
 
 interface RouteState {
   isTeacher: boolean;
@@ -116,6 +125,9 @@ function getRouteFromLocation(): RouteState {
     return { isTeacher: false, page: 'karya-detail', anchor: null, karyaSlug: matchedKaryaSlug };
   }
 
+  if (hash === '#/materi/dsi' || hash === '#materi/dsi' || path.endsWith('/materi/dsi')) {
+    return { isTeacher: false, page: 'materi-dsi', anchor: null };
+  }
   if (hash === '#/materi' || hash === '#materi' || path.endsWith('/materi')) {
     return { isTeacher: false, page: 'materi', anchor: null };
   }
@@ -193,7 +205,9 @@ export default function App() {
             : '#/'
           : page === 'karya-detail'
             ? `#/karya/${resolvedSlug}`
-            : `#/${page}`;
+            : page === 'materi-dsi'
+              ? '#/materi/dsi'
+              : `#/${page}`;
 
       if (window.location.hash !== nextHash) {
         window.history.pushState(null, '', nextHash);
@@ -396,7 +410,7 @@ export default function App() {
             </a>
             <a
               href="#/materi"
-              className={activePage === 'materi' ? 'active' : undefined}
+              className={activePage === 'materi' || activePage === 'materi-dsi' ? 'active' : undefined}
               onClick={(e) => {
                 e.preventDefault();
                 navigateTo('materi');
@@ -502,7 +516,7 @@ export default function App() {
           </a>
           <a
             href="#/materi"
-            className={activePage === 'materi' ? 'active' : undefined}
+            className={activePage === 'materi' || activePage === 'materi-dsi' ? 'active' : undefined}
             onClick={(e) => {
               e.preventDefault();
               navigateTo('materi');
@@ -983,33 +997,55 @@ export default function App() {
                     Belum ada materi untuk {currentMapelMateri} · {currentKelasMateri}.
                   </motion.p>
                 ) : (
-                  materiItems.map((m, i) => (
-                    <SmoothCard
-                      key={`${m.Judul || 'materi'}-${i}`}
-                      index={i}
-                      link={m.Link}
-                      className={`materi-card card-accent-${(i % 4) + 1}`}
-                    >
-                      <CardMediaImage src={m.Image} />
-                      <div className="materi-num">
-                        {String(i + 1).padStart(2, '0')} · {m.Kelas}
-                      </div>
-                      <h4>{m.Judul}</h4>
-                      <p>{m.Deskripsi}</p>
-                      <div className="materi-tag">{m.Tag || ''}</div>
-                      {m.Link ? (
-                        <div className="card-access-btn access-sky">
-                          <span>Buka Materi</span>
-                          <span className="card-access-arrow" aria-hidden="true">→</span>
+                  materiItems.map((m, i) => {
+                    const isDsi =
+                      isDsiMateriLink(m.Link) ||
+                      (m.Tag?.toUpperCase() === 'DSI' &&
+                        m.Judul?.toLowerCase().includes('dampak sosial'));
+                    return (
+                      <SmoothCard
+                        key={`${m.Judul || 'materi'}-${i}`}
+                        index={i}
+                        link={isDsi ? '#/materi/dsi' : m.Link}
+                        onClick={
+                          isDsi
+                            ? (e) => {
+                                e.preventDefault();
+                                navigateTo('materi-dsi');
+                              }
+                            : undefined
+                        }
+                        className={`materi-card card-accent-${(i % 4) + 1}`}
+                      >
+                        <CardMediaImage src={m.Image} />
+                        <div className="materi-num">
+                          {String(i + 1).padStart(2, '0')} · {m.Kelas}
                         </div>
-                      ) : null}
-                    </SmoothCard>
-                  ))
+                        <h4>{m.Judul}</h4>
+                        <p>{m.Deskripsi}</p>
+                        <div className="materi-tag">{m.Tag || ''}</div>
+                        {m.Link || isDsi ? (
+                          <div className="card-access-btn access-sky">
+                            <span>{isDsi ? 'Buka Modul 3D' : 'Buka Materi'}</span>
+                            <span className="card-access-arrow" aria-hidden="true">→</span>
+                          </div>
+                        ) : null}
+                      </SmoothCard>
+                    );
+                  })
                 )}
               </SmoothGrid>
             </div>
           </section>
         </>
+      ) : activePage === 'materi-dsi' ? (
+        <DsiMateriPage
+          onBackToMateri={() => {
+            setCurrentMapelMateri('Informatika');
+            setCurrentKelasMateri('Kelas 12');
+            navigateTo('materi');
+          }}
+        />
       ) : activePage === 'it-skills' ? (
         <>
           <header className="subpage-hero">

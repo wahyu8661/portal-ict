@@ -590,16 +590,21 @@ export function DashboardView({
                     />
                     <label htmlFor="f-link">
                       {activeTable === 'it_skills'
-                        ? 'Tautan Modul IT Skills (URL)'
-                        : 'Tautan Materi (URL)'}
+                        ? 'Tautan Modul IT Skills (URL atau Path Internal)'
+                        : 'Tautan Materi (URL atau Modul Internal)'}
                     </label>
                     <input
                       id="f-link"
-                      type="url"
-                      placeholder="https://..."
+                      type="text"
+                      list="materi-internal-links"
+                      placeholder="https://... atau #/materi/dsi"
                       value={formState.Link}
                       onChange={(e) => updateField('Link', e.target.value)}
                     />
+                    <datalist id="materi-internal-links">
+                      <option value="#/materi/dsi" />
+                      <option value="/assets/aistudio/pembelajaran_interaktif_3d_dampak_sosial_informatika_ecbf4dc4.html" />
+                    </datalist>
                     <label htmlFor="f-img">URL Gambar Sampul (Opsional)</label>
                     <input
                       id="f-img"
