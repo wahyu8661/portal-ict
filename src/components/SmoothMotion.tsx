@@ -1,4 +1,4 @@
-import { createContext, type ReactNode, useContext, useRef } from 'react';
+import { createContext, type MouseEvent, type ReactNode, useContext, useRef } from 'react';
 import { motion, useInView } from 'motion/react';
 
 export const SILKY_EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
@@ -29,11 +29,12 @@ export function SmoothGrid({ filterKey, className, children }: SmoothGridProps) 
 interface SmoothCardProps {
   index: number;
   link?: string;
+  onClick?: (e: MouseEvent<HTMLAnchorElement>) => void;
   className: string;
   children: ReactNode;
 }
 
-export function SmoothCard({ index, link, className, children }: SmoothCardProps) {
+export function SmoothCard({ index, link, onClick, className, children }: SmoothCardProps) {
   const isInView = useContext(SmoothGridContext);
   const delay = Math.min(index * 0.055, 0.42);
 
@@ -47,7 +48,7 @@ export function SmoothCard({ index, link, className, children }: SmoothCardProps
       y: -5,
       transition: { duration: 0.24, ease: SILKY_EASE },
     },
-    whileTap: link ? { scale: 0.985 } : undefined,
+    whileTap: link || onClick ? { scale: 0.985 } : undefined,
     transition: {
       duration: 0.52,
       delay,
@@ -56,6 +57,13 @@ export function SmoothCard({ index, link, className, children }: SmoothCardProps
   };
 
   if (link) {
+    if (onClick) {
+      return (
+        <motion.a href={link} onClick={onClick} {...motionProps}>
+          {children}
+        </motion.a>
+      );
+    }
     return (
       <motion.a href={link} target="_blank" rel="noopener noreferrer" {...motionProps}>
         {children}

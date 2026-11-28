@@ -852,14 +852,21 @@ export function DashboardView({
                       value={formState.Pembuat}
                       onChange={(e) => updateField('Pembuat', e.target.value)}
                     />
-                    <label htmlFor="k-link">Tautan Karya (URL)</label>
+                    <label htmlFor="k-link">Tautan Karya (URL atau Galeri Internal)</label>
                     <input
                       id="k-link"
-                      type="url"
-                      placeholder="https://..."
+                      type="text"
+                      list="karya-gallery-links"
+                      placeholder="https://... atau #/karya/nf11-1-ak2"
                       value={formState.Link}
                       onChange={(e) => updateField('Link', e.target.value)}
                     />
+                    <datalist id="karya-gallery-links">
+                      <option value="#/karya/nf11-1-ak2" />
+                      <option value="#/karya/aplikasi" />
+                      <option value="#/karya/videoiklan" />
+                      <option value="#/karya/videovlog" />
+                    </datalist>
                     <label htmlFor="k-img">URL Gambar Preview</label>
                     <input
                       id="k-img"

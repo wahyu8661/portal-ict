@@ -1,6 +1,7 @@
 import { type FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, motion, MotionConfig } from 'motion/react';
 import { CardMediaImage, MediaBox } from './components/MediaBox';
+import { KaryaDetailPage } from './components/KaryaDetailPage';
 import { PointerFX } from './components/PointerFX';
 import {
   SILKY_EASE,
@@ -11,6 +12,7 @@ import {
 } from './components/SmoothMotion';
 import { SubjectSwitch } from './components/SubjectSwitch';
 import { TeacherPortal } from './components/TeacherPortal';
+import { type KaryaGallerySlug, resolveKaryaGallerySlug } from './data/karyaGalleries';
 import {
   DEFAULT_INFO,
   DEFAULT_IT_SKILLS,
@@ -33,12 +35,13 @@ import {
 } from './data/sheets';
 import { loadPortalData } from './data/supabaseDb';
 
-type PortalPage = 'home' | 'materi' | 'it-skills' | 'tugas' | 'nilai';
+type PortalPage = 'home' | 'materi' | 'it-skills' | 'tugas' | 'nilai' | 'karya-detail';
 
 interface RouteState {
   isTeacher: boolean;
   page: PortalPage;
   anchor: string | null;
+  karyaSlug?: KaryaGallerySlug;
 }
 
 function GoldSquiggle() {
@@ -101,6 +104,18 @@ function getRouteFromLocation(): RouteState {
     return { isTeacher: true, page: 'home', anchor: null };
   }
 
+  const hashKaryaSlug = hash.startsWith('#/karya/')
+    ? resolveKaryaGallerySlug(hash.slice('#/karya/'.length))
+    : null;
+  const pathKaryaSlug = path.includes('galeri-karya')
+    ? resolveKaryaGallerySlug(window.location.pathname)
+    : null;
+  const matchedKaryaSlug = hashKaryaSlug || pathKaryaSlug;
+
+  if (matchedKaryaSlug) {
+    return { isTeacher: false, page: 'karya-detail', anchor: null, karyaSlug: matchedKaryaSlug };
+  }
+
   if (hash === '#/materi' || hash === '#materi' || path.endsWith('/materi')) {
     return { isTeacher: false, page: 'materi', anchor: null };
   }
@@ -127,6 +142,9 @@ export default function App() {
   const initialRoute = useMemo(() => getRouteFromLocation(), []);
   const [isTeacherRoute, setIsTeacherRoute] = useState<boolean>(initialRoute.isTeacher);
   const [activePage, setActivePage] = useState<PortalPage>(initialRoute.page);
+  const [activeKaryaSlug, setActiveKaryaSlug] = useState<KaryaGallerySlug>(
+    initialRoute.karyaSlug || 'nf11-1-ak2'
+  );
 
   const [materiAll, setMateriAll] = useState<MateriItem[]>(DEFAULT_MATERI);
   const [itSkillsAll, setItSkillsAll] = useState<ItSkillItem[]>(DEFAULT_IT_SKILLS);
@@ -160,16 +178,22 @@ export default function App() {
   }, []);
 
   const navigateTo = useCallback(
-    (page: PortalPage, anchor?: string) => {
+    (page: PortalPage, anchor?: string, karyaSlug?: KaryaGallerySlug) => {
       setSidebarOpen(false);
       setActivePage(page);
+      if (karyaSlug) {
+        setActiveKaryaSlug(karyaSlug);
+      }
 
+      const resolvedSlug = karyaSlug || activeKaryaSlug;
       const nextHash =
         page === 'home'
           ? anchor
             ? `#${anchor}`
             : '#/'
-          : `#/${page}`;
+          : page === 'karya-detail'
+            ? `#/karya/${resolvedSlug}`
+            : `#/${page}`;
 
       if (window.location.hash !== nextHash) {
         window.history.pushState(null, '', nextHash);
@@ -181,7 +205,7 @@ export default function App() {
         window.scrollTo({ top: 0, behavior: 'smooth' });
       }
     },
-    [scrollToSection]
+    [activeKaryaSlug, scrollToSection]
   );
 
   useEffect(() => {
@@ -189,6 +213,9 @@ export default function App() {
       const next = getRouteFromLocation();
       setIsTeacherRoute(next.isTeacher);
       setActivePage(next.page);
+      if (next.karyaSlug) {
+        setActiveKaryaSlug(next.karyaSlug);
+      }
       if (!next.isTeacher) {
         if (next.page === 'home' && next.anchor) {
           scrollToSection(next.anchor);
@@ -529,7 +556,7 @@ export default function App() {
 
       <AnimatePresence mode="wait">
         <motion.div
-          key={activePage}
+          key={activePage === 'karya-detail' ? `karya-detail-${activeKaryaSlug}` : activePage}
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -8 }}
@@ -796,11 +823,20 @@ export default function App() {
                           emoji: '📁',
                         };
                         const heightClass = KARYA_HEIGHT_CLASSES[i % 3];
+                        const gallerySlug = resolveKaryaGallerySlug(k.Link);
                         return (
                           <SmoothCard
                             key={`${k.Judul || 'karya'}-${i}`}
                             index={i}
-                            link={k.Link}
+                            link={gallerySlug ? `#/karya/${gallerySlug}` : k.Link}
+                            onClick={
+                              gallerySlug
+                                ? (e) => {
+                                    e.preventDefault();
+                                    navigateTo('karya-detail', undefined, gallerySlug);
+                                  }
+                                : undefined
+                            }
                             className="karya-item"
                           >
                             <span className="karya-tag">{k.Kategori}</span>
@@ -818,8 +854,10 @@ export default function App() {
                               </p>
                               {k.Link ? (
                                 <div className="card-access-btn access-emerald">
-                                  <span>Lihat Karya</span>
-                                  <span className="card-access-arrow" aria-hidden="true">↗</span>
+                                  <span>{gallerySlug ? 'Buka Galeri Karya' : 'Lihat Karya'}</span>
+                                  <span className="card-access-arrow" aria-hidden="true">
+                                    {gallerySlug ? '→' : '↗'}
+                                  </span>
                                 </div>
                               ) : null}
                             </div>
@@ -1207,6 +1245,12 @@ export default function App() {
             </div>
           </section>
         </>
+      ) : activePage === 'karya-detail' ? (
+        <KaryaDetailPage
+          slug={activeKaryaSlug}
+          onSelectGallery={(slug) => navigateTo('karya-detail', undefined, slug)}
+          onBackToKarya={() => navigateTo('home', 'karya')}
+        />
       ) : (
         <section id="nilai" className="nilai-page-full">
           <div className="nilai-stars" aria-hidden="true">
